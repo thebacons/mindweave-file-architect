@@ -37,8 +37,15 @@ export const formatBytes = (bytes: number, decimals = 2) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
-// Helper function to truncate text
-export const truncateText = (text: string, maxLength = 15) => {
+// Helper function to truncate text with improved visibility
+export const truncateText = (text: string, maxLength = 25) => {
+  if (!text) return "";
+  
+  // For very long filenames, show beginning and end with ellipsis in middle
+  if (text.length > maxLength * 2) {
+    return text.substring(0, maxLength) + "..." + text.substring(text.length - 10);
+  }
+  
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 };
 
@@ -68,7 +75,7 @@ export const createMindMapVisualization = (
 
   // Create a group for the entire visualization with zoom capability
   const g = svg.append("g")
-    .attr("transform", `translate(100, 50)`);
+    .attr("transform", `translate(150, 50)`); // Increased left margin for longer filenames
 
   // Add links between nodes
   g.selectAll(".link")
@@ -102,16 +109,30 @@ export const createMindMapVisualization = (
     .attr("stroke", "#1e293b")
     .attr("stroke-width", 1.5);
 
-  // Add node labels with smaller font size and truncation
+  // Add node labels with more visible text
   node.append("text")
     .attr("dy", "0.31em")
-    .attr("x", d => d.children ? -10 : 10)
+    .attr("x", d => d.children ? -12 : 12) // Position text farther from node
     .attr("text-anchor", d => d.children ? "end" : "start")
-    .attr("font-size", "9px") // Even smaller font size
+    .attr("font-size", "10px") // Slightly larger font size
     .attr("pointer-events", "none") // Prevent the text from capturing mouse events
-    .text(d => truncateText(d.data.name))
+    .text(d => truncateText(d.data.name, 25))
     .attr("fill", "currentColor")
-    .attr("class", "node-text");
+    .attr("class", "node-text")
+    .each(function(d) {
+      // Add a background for better text visibility
+      const bbox = this.getBBox();
+      const padding = 2;
+      d3.select(this.parentNode)
+        .insert("rect", "text")
+        .attr("x", bbox.x - padding)
+        .attr("y", bbox.y - padding)
+        .attr("width", bbox.width + (padding * 2))
+        .attr("height", bbox.height + (padding * 2))
+        .attr("fill", "rgba(30, 41, 59, 0.7)")
+        .attr("rx", 3)
+        .attr("opacity", 0.6);
+    });
 
   // Add click handler for files/directories
   node.append("circle")
@@ -141,4 +162,7 @@ export const createMindMapVisualization = (
     });
 
   svg.call(zoom as any);
+  
+  // Initial zoom to fit more content
+  svg.call(zoom.transform as any, d3.zoomIdentity.translate(150, 50).scale(0.8));
 };

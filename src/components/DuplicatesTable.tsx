@@ -71,7 +71,7 @@ const DuplicatesTable = ({ duplicates }: DuplicatesTableProps) => {
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead className="w-[450px]">File</TableHead>
+                <TableHead className="w-[600px]">File</TableHead>
                 <TableHead className="w-[100px]">Size</TableHead>
                 <TableHead>Locations</TableHead>
               </TableRow>
@@ -82,9 +82,9 @@ const DuplicatesTable = ({ duplicates }: DuplicatesTableProps) => {
                   <TableCell className="font-medium">
                     <HoverCard>
                       <HoverCardTrigger asChild>
-                        <div className="truncate cursor-help max-w-[430px]">{group.fileName}</div>
+                        <div className="truncate cursor-help max-w-[580px]">{group.fileName}</div>
                       </HoverCardTrigger>
-                      <HoverCardContent side="top" className="w-[500px]">
+                      <HoverCardContent side="top" className="w-[600px]">
                         <div className="space-y-1">
                           <p className="text-sm font-medium">Full filename:</p>
                           <p className="text-xs break-all">{group.fileName}</p>
@@ -124,7 +124,7 @@ const DuplicatesTable = ({ duplicates }: DuplicatesTableProps) => {
                                 )}
                               </div>
                             </HoverCardTrigger>
-                            <HoverCardContent side="top" className="w-[500px]">
+                            <HoverCardContent side="top" className="w-[600px]">
                               <div className="space-y-2">
                                 <div>
                                   <p className="text-sm font-medium">Full filename:</p>
