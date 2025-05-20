@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import { DirectoryNode } from "@/types/filesystem";
 import { toast } from "sonner";
 
-// Function to open file in explorer
+// Function to open file in explorer with improved experience
 export const openInExplorer = (path: string) => {
   // Check if the file is from a mock dataset
   if (path.startsWith('/mock') || !path) {
@@ -14,7 +14,7 @@ export const openInExplorer = (path: string) => {
   try {
     // Try to use the File System Access API if available
     if ('showDirectoryPicker' in window) {
-      toast.info(`Attempting to navigate to: ${path}`);
+      toast.info(`Opening: ${path}`);
       // Unfortunately, we can't directly navigate to a specific path due to security restrictions
       // We can only show a message explaining what would happen in a desktop app
       toast.info("In a desktop application, this would open your file explorer to this path");
@@ -38,12 +38,12 @@ export const formatBytes = (bytes: number, decimals = 2) => {
 };
 
 // Helper function to truncate text with improved visibility
-export const truncateText = (text: string, maxLength = 25) => {
+export const truncateText = (text: string, maxLength = 35) => {
   if (!text) return "";
   
-  // For very long filenames, show beginning and end with ellipsis in middle
+  // For very long filenames, show more of beginning and end
   if (text.length > maxLength * 2) {
-    return text.substring(0, maxLength) + "..." + text.substring(text.length - 10);
+    return text.substring(0, maxLength) + "..." + text.substring(text.length - 15);
   }
   
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
@@ -69,13 +69,13 @@ export const createMindMapVisualization = (
   const hierarchy = d3.hierarchy(data);
   
   const treeLayout = d3.tree<DirectoryNode>()
-    .size([height - 100, width - 300]); // Swap dimensions for horizontal tree
+    .size([height - 100, width - 350]); // More horizontal space for node labels
   
   const root = treeLayout(hierarchy);
 
   // Create a group for the entire visualization with zoom capability
   const g = svg.append("g")
-    .attr("transform", `translate(150, 50)`); // Increased left margin for longer filenames
+    .attr("transform", `translate(200, 50)`); // Increased left margin for longer filenames
 
   // Add links between nodes
   g.selectAll(".link")
@@ -91,15 +91,25 @@ export const createMindMapVisualization = (
     .attr("opacity", 0.6);
 
   // Add node groups with fixed positions
-  const node = g.selectAll(".node")
+  const nodeGroups = g.selectAll(".node")
     .data(root.descendants())
     .join("g")
     .attr("class", "node")
     .attr("transform", d => `translate(${d.y},${d.x})`)
     .attr("data-path", d => d.data.path);
 
+  // Add background rectangles for better hover behavior
+  nodeGroups.append("rect")
+    .attr("class", "node-bg")
+    .attr("x", d => d.children ? -150 : 10) // Position based on whether node has children
+    .attr("y", -15)
+    .attr("width", 140) // Fixed width for stability
+    .attr("height", 30)
+    .attr("fill", "transparent") // Transparent by default
+    .attr("rx", 4); // Rounded corners
+
   // Add node circles with different colors based on node type
-  node.append("circle")
+  nodeGroups.append("circle")
     .attr("r", d => d.data.isDirectory ? 8 : 5)
     .attr("fill", d => {
       if (d.data.isDuplicate) return "#ef4444"; // Red for duplicates
@@ -109,43 +119,68 @@ export const createMindMapVisualization = (
     .attr("stroke", "#1e293b")
     .attr("stroke-width", 1.5);
 
-  // Add node labels with more visible text
-  node.append("text")
+  // Add node labels with more stable positioning
+  const labels = nodeGroups.append("text")
     .attr("dy", "0.31em")
-    .attr("x", d => d.children ? -12 : 12) // Position text farther from node
+    .attr("x", d => d.children ? -12 : 12)
     .attr("text-anchor", d => d.children ? "end" : "start")
-    .attr("font-size", "10px") // Slightly larger font size
+    .attr("font-size", "11px") // Slightly larger font
     .attr("pointer-events", "none") // Prevent the text from capturing mouse events
-    .text(d => truncateText(d.data.name, 25))
+    .text(d => truncateText(d.data.name, 35))
     .attr("fill", "currentColor")
-    .attr("class", "node-text")
-    .each(function(d) {
-      // Add a background for better text visibility
-      const bbox = this.getBBox();
-      const padding = 2;
-      d3.select(this.parentNode)
-        .insert("rect", "text")
-        .attr("x", bbox.x - padding)
-        .attr("y", bbox.y - padding)
-        .attr("width", bbox.width + (padding * 2))
-        .attr("height", bbox.height + (padding * 2))
-        .attr("fill", "rgba(30, 41, 59, 0.7)")
-        .attr("rx", 3)
-        .attr("opacity", 0.6);
-    });
+    .attr("class", "node-text");
 
-  // Add click handler for files/directories
-  node.append("circle")
-    .attr("r", 15) // Larger invisible circle for better click target
-    .attr("fill", "transparent")
-    .attr("class", "click-target")
-    .style("cursor", "pointer")
-    .on("click", (event, d) => {
+  // Add stable text backgrounds that don't change on hover
+  labels.each(function(d) {
+    // Add a background for better text visibility
+    const bbox = this.getBBox();
+    const padding = 3;
+    d3.select(this.parentNode)
+      .insert("rect", "text")
+      .attr("class", "text-bg")
+      .attr("x", bbox.x - padding)
+      .attr("y", bbox.y - padding)
+      .attr("width", bbox.width + (padding * 2))
+      .attr("height", bbox.height + (padding * 2))
+      .attr("fill", "rgba(30, 41, 59, 0.7)")
+      .attr("rx", 3)
+      .attr("opacity", 0.6);
+  });
+
+  // Add hover effects without causing text jumps
+  nodeGroups
+    .on("mouseover", function() {
+      d3.select(this).select(".node-bg")
+        .attr("fill", "rgba(30, 41, 59, 0.2)");
+      
+      // Increase circle size slightly
+      d3.select(this).select("circle")
+        .transition()
+        .duration(100)
+        .attr("r", function(d: any) {
+          return d.data.isDirectory ? 9 : 6;
+        });
+    })
+    .on("mouseout", function() {
+      d3.select(this).select(".node-bg")
+        .attr("fill", "transparent");
+      
+      // Restore circle size
+      d3.select(this).select("circle")
+        .transition()
+        .duration(100)
+        .attr("r", function(d: any) {
+          return d.data.isDirectory ? 8 : 5;
+        });
+    })
+    // Add click handler for opening in file explorer
+    .on("click", (event, d: any) => {
       openInExplorer(d.data.path);
-    });
+    })
+    .style("cursor", "pointer");
 
   // Enhanced tooltip with full filename, size, and path
-  node.append("title")
+  nodeGroups.append("title")
     .text(d => {
       const name = d.data.name;
       const size = d.data.size ? ` (${formatBytes(d.data.size)})` : '';
@@ -164,5 +199,6 @@ export const createMindMapVisualization = (
   svg.call(zoom as any);
   
   // Initial zoom to fit more content
-  svg.call(zoom.transform as any, d3.zoomIdentity.translate(150, 50).scale(0.8));
+  svg.call(zoom.transform as any, d3.zoomIdentity.translate(200, 50).scale(0.8));
 };
+
