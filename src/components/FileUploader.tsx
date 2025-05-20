@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { FolderOpen, Database, Download, Github, FileDown, Upload, Server, File } from "lucide-react";
 import { mockFileSystemData } from "@/lib/mockData";
 import { scanFilesViaInput } from "@/lib/utils";
+import { DirectoryNode } from "@/types/filesystem";
 
 interface FileUploaderProps {
   onFilesLoaded: (files: FileSystemDirectoryEntry) => void;
@@ -133,7 +133,7 @@ const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUpl
   
   // Process individual files without directory structure
   const processIndividualFiles = async (files: FileList) => {
-    const rootNode: any = {
+    const rootNode: DirectoryNode = {
       name: "Uploaded Files",
       path: "",
       isDirectory: true,
@@ -141,9 +141,9 @@ const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUpl
     };
     
     // Create basic file type folders
-    const imageFolder = { name: "Images", path: "/Images", isDirectory: true, children: [] };
-    const documentFolder = { name: "Documents", path: "/Documents", isDirectory: true, children: [] };
-    const otherFolder = { name: "Other", path: "/Other", isDirectory: true, children: [] };
+    const imageFolder: DirectoryNode = { name: "Images", path: "/Images", isDirectory: true, children: [] };
+    const documentFolder: DirectoryNode = { name: "Documents", path: "/Documents", isDirectory: true, children: [] };
+    const otherFolder: DirectoryNode = { name: "Other", path: "/Other", isDirectory: true, children: [] };
     
     rootNode.children.push(imageFolder, documentFolder, otherFolder);
     
@@ -158,7 +158,7 @@ const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUpl
       totalSize += file.size;
       
       const hash = await hashFile(file);
-      const fileNode = {
+      const fileNode: DirectoryNode = {
         name: file.name,
         path: "/" + (file.name),
         isDirectory: false,
