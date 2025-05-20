@@ -27,10 +27,21 @@ export async function hashFile(file: File): Promise<string> {
   // In a real app, we would use a proper hash function like SHA-256
   try {
     const buffer = await file.arrayBuffer();
-    const hashArray = Array.from(new Uint8Array(buffer))
+    
+    // Include the file name and size in the hash to distinguish
+    // files with the same content but different names
+    const fullFileName = file.name;
+    const fileSize = file.size;
+    
+    // Create a unique identifier by combining content hash, name, and size
+    const contentHashArray = Array.from(new Uint8Array(buffer))
       .slice(0, 1024) // Just use first 1KB for faster hashing
       .map(b => b.toString(16).padStart(2, '0'));
-    return hashArray.join('');
+    
+    const contentHash = contentHashArray.join('');
+    const uniqueId = `${contentHash}_${fullFileName}_${fileSize}`;
+    
+    return uniqueId;
   } catch (error) {
     console.error("Error hashing file:", error);
     return "";
@@ -136,7 +147,7 @@ export async function scanFileSystem(directoryEntry: FileSystemDirectoryEntry | 
                       hash
                     };
                     
-                    // Check for duplicates
+                    // Check for duplicates - but now using the more robust hash
                     if (hash) {
                       if (fileHashes.has(hash)) {
                         const group = fileHashes.get(hash)!;
@@ -289,6 +300,7 @@ export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult
     const parentPath = pathParts.join('/');
     const parent = pathMap.get(parentPath);
     if (parent && parent.children) {
+      // Updated hash function that includes filename in hash creation
       const hash = await hashFile(file);
       const fileNode: DirectoryNode = {
         name: fileName,
@@ -299,20 +311,20 @@ export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult
         hash
       };
       
-      // Check for duplicates
+      // Check for duplicates with improved hash method
       if (hash) {
         if (fileHashes.has(hash)) {
           const group = fileHashes.get(hash)!;
           group.paths.push(fileNode.path);
-          group.fullFilenames.push(fileName); // Add the full filename
+          group.fullFilenames.push(fileName);
           fileNode.isDuplicate = true;
         } else {
           fileHashes.set(hash, {
             hash,
-            fileName: fileName, // Use the actual filename
+            fileName: fileName,
             size: file.size,
             paths: [fileNode.path],
-            fullFilenames: [fileName] // Initialize with the full filename
+            fullFilenames: [fileName]
           });
         }
       }

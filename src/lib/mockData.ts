@@ -1,277 +1,273 @@
-
 import { AnalysisResult, DirectoryNode, DuplicateGroup, FileStats, Recommendation } from "@/types/filesystem";
-import { formatBytes } from "./utils";
+import { generateFileRecommendations } from "./utils";
 
-// Create mock directory structure
-const createMockDirectoryStructure = (): DirectoryNode => {
-  return {
-    name: "root",
-    path: "/root",
+export function mockFileSystemData(): AnalysisResult {
+  // Create the root node
+  const rootNode: DirectoryNode = {
+    name: "mock-project",
+    path: "/mock-project",
     isDirectory: true,
     children: [
       {
-        name: "Documents",
-        path: "/root/Documents",
+        name: "src",
+        path: "/mock-project/src",
         isDirectory: true,
         children: [
           {
-            name: "Work",
-            path: "/root/Documents/Work",
+            name: "components",
+            path: "/mock-project/src/components",
             isDirectory: true,
             children: [
               {
-                name: "Project A",
-                path: "/root/Documents/Work/Project A",
-                isDirectory: true,
-                children: [
-                  {
-                    name: "proposal.docx",
-                    path: "/root/Documents/Work/Project A/proposal.docx",
-                    isDirectory: false,
-                    size: 2500000,
-                    type: "docx",
-                    hash: "abc123"
-                  },
-                  {
-                    name: "budget.xlsx",
-                    path: "/root/Documents/Work/Project A/budget.xlsx",
-                    isDirectory: false,
-                    size: 1800000,
-                    type: "xlsx"
-                  }
-                ]
+                name: "Button.tsx",
+                path: "/mock-project/src/components/Button.tsx",
+                isDirectory: false,
+                size: 2048,
+                type: "tsx"
               },
               {
-                name: "Project B",
-                path: "/root/Documents/Work/Project B",
-                isDirectory: true,
-                children: [
-                  {
-                    name: "report.pdf",
-                    path: "/root/Documents/Work/Project B/report.pdf",
-                    isDirectory: false,
-                    size: 3500000,
-                    type: "pdf"
-                  },
-                  {
-                    name: "presentation.pptx",
-                    path: "/root/Documents/Work/Project B/presentation.pptx",
-                    isDirectory: false,
-                    size: 4200000,
-                    type: "pptx"
-                  }
-                ]
+                name: "Card.tsx",
+                path: "/mock-project/src/components/Card.tsx",
+                isDirectory: false,
+                size: 3072,
+                type: "tsx"
               }
             ]
           },
           {
-            name: "Personal",
-            path: "/root/Documents/Personal",
+            name: "lib",
+            path: "/mock-project/src/lib",
             isDirectory: true,
             children: [
               {
-                name: "resume.docx",
-                path: "/root/Documents/Personal/resume.docx",
+                name: "utils.ts",
+                path: "/mock-project/src/lib/utils.ts",
                 isDirectory: false,
-                size: 350000,
-                type: "docx"
+                size: 4096,
+                type: "ts"
               },
               {
-                name: "tax_return_2024.pdf",
-                path: "/root/Documents/Personal/tax_return_2024.pdf",
+                name: "api.ts",
+                path: "/mock-project/src/lib/api.ts",
                 isDirectory: false,
-                size: 1200000,
-                type: "pdf"
+                size: 1536,
+                type: "ts"
               }
             ]
+          },
+          {
+            name: "App.tsx",
+            path: "/mock-project/src/App.tsx",
+            isDirectory: false,
+            size: 5120,
+            type: "tsx"
+          },
+          {
+            name: "index.css",
+            path: "/mock-project/src/index.css",
+            isDirectory: false,
+            size: 1024,
+            type: "css"
           }
         ]
       },
       {
-        name: "Pictures",
-        path: "/root/Pictures",
+        name: "public",
+        path: "/mock-project/public",
         isDirectory: true,
         children: [
           {
-            name: "Vacation",
-            path: "/root/Pictures/Vacation",
-            isDirectory: true,
-            children: [
-              {
-                name: "beach.jpg",
-                path: "/root/Pictures/Vacation/beach.jpg",
-                isDirectory: false,
-                size: 5500000,
-                type: "jpg"
-              },
-              {
-                name: "mountains.jpg",
-                path: "/root/Pictures/Vacation/mountains.jpg",
-                isDirectory: false,
-                size: 6200000,
-                type: "jpg"
-              },
-              {
-                name: "beach_copy.jpg",
-                path: "/root/Pictures/Vacation/beach_copy.jpg",
-                isDirectory: false,
-                size: 5500000,
-                type: "jpg",
-                hash: "def456",
-                isDuplicate: true
-              }
-            ]
+            name: "logo.png",
+            path: "/mock-project/public/logo.png",
+            isDirectory: false,
+            size: 8192,
+            type: "png"
           },
           {
-            name: "Family",
-            path: "/root/Pictures/Family",
-            isDirectory: true,
-            children: [
-              {
-                name: "christmas.png",
-                path: "/root/Pictures/Family/christmas.png",
-                isDirectory: false,
-                size: 8100000,
-                type: "png"
-              },
-              {
-                name: "birthday.jpg",
-                path: "/root/Pictures/Family/birthday.jpg",
-                isDirectory: false,
-                size: 4800000,
-                type: "jpg"
-              }
-            ]
+            name: "favicon.ico",
+            path: "/mock-project/public/favicon.ico",
+            isDirectory: false,
+            size: 4096,
+            type: "ico"
           }
         ]
       },
       {
-        name: "Downloads",
-        path: "/root/Downloads",
+        name: "data",
+        path: "/mock-project/data",
         isDirectory: true,
         children: [
           {
-            name: "software.dmg",
-            path: "/root/Downloads/software.dmg",
+            name: "sample.json",
+            path: "/mock-project/data/sample.json",
             isDirectory: false,
-            size: 350000000,
-            type: "dmg"
+            size: 6144,
+            type: "json"
           },
           {
-            name: "movie.mp4",
-            path: "/root/Downloads/movie.mp4",
+            name: "readme.md",
+            path: "/mock-project/data/readme.md",
             isDirectory: false,
-            size: 1500000000,
-            type: "mp4"
+            size: 2048,
+            type: "md"
+          }
+        ]
+      },
+      {
+        name: "CI-0010040-911362-04D-0117.pdf",
+        path: "/mock-project/CI-0010040-911362-04D-0117.pdf",
+        isDirectory: false,
+        size: 45000,
+        type: "pdf"
+      },
+      {
+        name: "old-config",
+        path: "/mock-project/old-config",
+        isDirectory: true,
+        children: [
+          {
+            name: "package.json",
+            path: "/mock-project/old-config/package.json",
+            isDirectory: false,
+            size: 2500,
+            type: "json"
+          }
+        ]
+      },
+      {
+        name: "package.json",
+        path: "/mock-project/package.json",
+        isDirectory: false,
+        size: 2500,
+        type: "json"
+      },
+      {
+        name: "vite.config.ts",
+        path: "/mock-project/vite.config.ts",
+        isDirectory: false,
+        size: 3584,
+        type: "ts"
+      },
+      {
+        name: "tsconfig.json",
+        path: "/mock-project/tsconfig.json",
+        isDirectory: false,
+        size: 2048,
+        type: "json"
+      },
+      {
+        name: "README.md",
+        path: "/mock-project/README.md",
+        isDirectory: false,
+        size: 1536,
+        type: "md"
+      },
+      {
+        name: ".gitignore",
+        path: "/mock-project/.gitignore",
+        isDirectory: false,
+        size: 1024,
+        type: ""
+      },
+      {
+        name: "03_SV_Bescheinigung",
+        path: "/mock-project/03_SV_Bescheinigung",
+        isDirectory: true,
+        children: [
+          {
+            "name": "CI-0010040-911362-04D-0117.pdf",
+            "path": "/mock-project/03_SV_Bescheinigung/CI-0010040-911362-04D-0117.pdf",
+            "isDirectory": false,
+            "size": 45000,
+            "type": "pdf"
           },
           {
-            name: "backup",
-            path: "/root/Downloads/backup",
-            isDirectory: true,
-            children: [
-              {
-                name: "old_photos",
-                path: "/root/Downloads/backup/old_photos",
-                isDirectory: true,
-                children: [
-                  {
-                    name: "beach.jpg",
-                    path: "/root/Downloads/backup/old_photos/beach.jpg",
-                    isDirectory: false,
-                    size: 5500000,
-                    type: "jpg",
-                    hash: "def456",
-                    isDuplicate: true
-                  }
-                ]
-              }
-            ]
+            "name": "CI-0010040-911362-04D-0118.pdf",
+            "path": "/mock-project/03_SV_Bescheinigung/CI-0010040-911362-04D-0118.pdf",
+            "isDirectory": false,
+            "size": 45000,
+            "type": "pdf"
+          },
+          {
+            "name": "CI-0010040-911362-04D-0119.pdf",
+            "path": "/mock-project/03_SV_Bescheinigung/CI-0010040-911362-04D-0119.pdf",
+            "isDirectory": false,
+            "size": 45000,
+            "type": "pdf"
           }
         ]
       }
     ]
   };
-};
-
-// Create mock duplicates
-const createMockDuplicates = (): DuplicateGroup[] => {
-  return [
-    {
-      hash: "def456",
-      fileName: "beach.jpg",
-      size: 5500000,
-      paths: [
-        "/root/Pictures/Vacation/beach.jpg",
-        "/root/Pictures/Vacation/beach_copy.jpg",
-        "/root/Downloads/backup/old_photos/beach.jpg"
-      ],
-      fullFilenames: [
-        "beach.jpg",
-        "beach_copy.jpg",
-        "beach.jpg"
-      ]
-    },
-    {
-      hash: "abc123",
-      fileName: "proposal.docx",
-      size: 2500000,
-      paths: [
-        "/root/Documents/Work/Project A/proposal.docx",
-        "/root/Documents/Work/Project A/old/proposal_v1.docx"
-      ],
-      fullFilenames: [
-        "proposal.docx",
-        "proposal_v1.docx"
-      ]
-    }
-  ];
-};
-
-// Create mock file stats
-const createMockStats = (): FileStats => {
-  const fileTypes = new Set<string>(["docx", "xlsx", "pdf", "pptx", "jpg", "png", "mp4", "dmg"]);
-  return {
-    totalSize: 2000000000,
-    totalFiles: 15,
-    totalDirs: 10,
-    duplicateFiles: 5,
+  
+  // Calculate statistics
+  const fileTypes = new Set<string>(["js", "tsx", "json", "md", "css", "html"]);
+  
+  const stats: FileStats = {
+    totalSize: 1250000, // 1.25 MB
+    totalFiles: 45,
+    totalDirs: 12,
+    duplicateFiles: 6,
     fileTypes,
-    avgDepth: 3.5,
-    maxDepth: 5
+    avgDepth: 2.5,
+    maxDepth: 4
   };
-};
-
-// Create mock recommendations
-const createMockRecommendations = (stats: FileStats, duplicates: DuplicateGroup[]): Recommendation[] => {
-  return [
+  
+  // Create duplicate groups
+  const duplicates: DuplicateGroup[] = [
     {
-      title: "Clean up duplicate files",
-      description: `Found ${stats.duplicateFiles} duplicate files that waste ${formatBytes(duplicates.reduce((acc, dup) => acc + (dup.size * (dup.paths.length - 1)), 0))} of storage.`,
-      suggestion: "Consider using a dedicated duplicate file cleaner to safely remove redundant files."
+      hash: "abcdef123456",
+      fileName: "CI-0010040-911362-04D-0117.pdf",
+      size: 45000,
+      paths: [
+        "/mock-project/03_SV_Bescheinigung/CI-0010040-911362-04D-0117.pdf",
+        "/mock-project/03_SV_Bescheinigung/CI-0010040-911362-04D-0118.pdf",
+        "/mock-project/03_SV_Bescheinigung/CI-0010040-911362-04D-0119.pdf",
+      ],
+      fullFilenames: [
+        "CI-0010040-911362-04D-0117.pdf",
+        "CI-0010040-911362-04D-0118.pdf",
+        "CI-0010040-911362-04D-0119.pdf",
+      ]
     },
     {
-      title: "Organize media files",
-      description: "You have several media files scattered across different folders. Consider organizing them by type.",
-      suggestion: "Move all images to /Pictures\nMove all videos to /Videos\nCreate subfolders by date or event"
-    },
-    {
-      title: "Consolidate documents",
-      description: "Your documents are spread across multiple folders with varying depths.",
-      suggestion: "Create a more consistent folder structure with fewer levels for better navigation."
-    },
-    {
-      title: "Clean up Downloads folder",
-      description: "Your Downloads folder contains large files that could be organized better.",
-      suggestion: "Create separate folders for software installations and media files within Downloads."
+      hash: "deadbeef78901",
+      fileName: "package.json",
+      size: 2500,
+      paths: [
+        "/mock-project/package.json",
+        "/mock-project/old-config/package.json"
+      ],
+      fullFilenames: [
+        "package.json",
+        "package.json"
+      ]
     }
   ];
-};
-
-export const mockFileSystemData = (): AnalysisResult => {
-  const rootNode = createMockDirectoryStructure();
-  const duplicates = createMockDuplicates();
-  const stats = createMockStats();
-  const recommendations = createMockRecommendations(stats, duplicates);
+  
+  // Mark duplicate nodes in the tree
+  const markDuplicates = (node: DirectoryNode) => {
+    if (!node.isDirectory && node.path) {
+      for (const group of duplicates) {
+        if (group.paths.includes(node.path)) {
+          node.isDuplicate = true;
+          break;
+        }
+      }
+    }
+    
+    node.children?.forEach(markDuplicates);
+  };
+  
+  markDuplicates(rootNode);
+  
+  // Generate recommendations
+  const recommendations = generateFileRecommendations({
+    rootNode,
+    stats,
+    duplicates,
+    recommendations: []
+  });
   
   return {
     rootNode,
@@ -279,4 +275,4 @@ export const mockFileSystemData = (): AnalysisResult => {
     duplicates,
     recommendations
   };
-};
+}
