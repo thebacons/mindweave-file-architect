@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FolderOpen, Database, Download } from "lucide-react";
+import { FolderOpen, Database, Download, Github } from "lucide-react";
 import { mockFileSystemData } from "@/lib/mockData";
 
 interface FileUploaderProps {
@@ -53,8 +53,9 @@ const FileUploader = ({ onFilesLoaded, onUseMockData }: FileUploaderProps) => {
 
   const handleDownloadInstructions = () => {
     const instructions = `
-# Running FileArchitect Locally
+# Running FileArchitect Locally (Including GitHub Setup)
 
+## Option 1: Quick Setup
 1. Make sure you have Node.js installed (version 16 or higher)
 2. Create a new directory for the project
 3. Open your terminal in that directory
@@ -70,7 +71,7 @@ npm install
 6. Install the required dependencies:
 
 \`\`\`
-npm install @radix-ui/react-* lucide-react sonner recharts tailwind-merge clsx class-variance-authority
+npm install @radix-ui/react-* lucide-react sonner recharts tailwind-merge clsx class-variance-authority @tanstack/react-query react-router-dom
 \`\`\`
 
 7. Start the development server:
@@ -80,6 +81,61 @@ npm run dev
 \`\`\`
 
 8. Open your browser and navigate to http://localhost:5173
+
+## Option 2: Setup With GitHub (TheBacons Account)
+
+### Creating the GitHub Repository
+1. Log in to your GitHub account (TheBacons)
+2. Click the "+" icon in the top-right corner and select "New repository"
+3. Name your repository (e.g., "file-architect")
+4. Choose whether to make it public or private
+5. Click "Create repository"
+
+### Setting Up the Project Locally
+1. Create a new Vite React TypeScript project:
+
+\`\`\`
+npm create vite@latest file-architect -- --template react-ts
+cd file-architect
+\`\`\`
+
+2. Initialize Git and connect to your GitHub repository:
+
+\`\`\`
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/TheBacons/file-architect.git
+git push -u origin main
+\`\`\`
+
+3. Replace the project files with the ones from this app
+4. Install dependencies:
+
+\`\`\`
+npm install @radix-ui/react-* lucide-react sonner recharts tailwind-merge clsx class-variance-authority @tanstack/react-query react-router-dom
+\`\`\`
+
+5. Commit and push your changes:
+
+\`\`\`
+git add .
+git commit -m "Add FileArchitect application"
+git push origin main
+\`\`\`
+
+6. Your project is now available at https://github.com/TheBacons/file-architect
+
+### Downloading From Your GitHub Repository
+1. To download from your GitHub repository in the future:
+
+\`\`\`
+git clone https://github.com/TheBacons/file-architect.git
+cd file-architect
+npm install
+npm run dev
+\`\`\`
 `;
 
     // Create a blob and download it
@@ -87,13 +143,13 @@ npm run dev
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'setup-instructions.md';
+    a.download = 'github-setup-instructions.md';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast.success("Setup instructions downloaded successfully!");
+    toast.success("GitHub setup instructions downloaded successfully!");
   };
 
   return (
@@ -128,8 +184,9 @@ npm run dev
           variant="outline"
           className="w-full gap-2"
         >
+          <Github className="h-4 w-4 mr-1" />
           <Download className="h-4 w-4" />
-          Download Local Setup Instructions
+          Download GitHub Setup Instructions
         </Button>
       </div>
       
