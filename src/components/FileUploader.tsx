@@ -19,40 +19,31 @@ const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUpl
     try {
       setIsLoading(true);
 
-      // Check if File System Access API is supported
-      if (!('showDirectoryPicker' in window)) {
-        toast.error("Your browser doesn't support the File System Access API. Try using Chrome or Edge.");
-        setIsLoading(false);
-        return;
+      // First try the modern File System Access API
+      if ('showDirectoryPicker' in window) {
+        try {
+          // @ts-ignore - TypeScript doesn't have types for showDirectoryPicker yet
+          const directoryHandle = await window.showDirectoryPicker({
+            mode: 'read'
+          });
+
+          // Convert directory handle to entry that can be scanned
+          // @ts-ignore - Using non-standard API
+          const directoryEntry = await new Promise<FileSystemDirectoryEntry>((resolve) => {
+            // @ts-ignore - Using FileSystem API
+            resolve(directoryHandle);
+          });
+
+          onFilesLoaded(directoryEntry);
+          toast.success("Directory selected successfully!");
+          return;
+        } catch (error) {
+          console.error("Error selecting directory:", error);
+          // Fall back to the alternative method below
+        }
       }
 
-      // @ts-ignore - TypeScript doesn't have types for showDirectoryPicker yet
-      const directoryHandle = await window.showDirectoryPicker({
-        mode: 'read'
-      });
-
-      // Convert directory handle to entry that can be scanned
-      // @ts-ignore - Using non-standard API
-      const directoryEntry = await new Promise<FileSystemDirectoryEntry>((resolve) => {
-        // @ts-ignore - Using FileSystem API
-        resolve(directoryHandle);
-      });
-
-      onFilesLoaded(directoryEntry);
-      toast.success("Directory selected successfully!");
-    } catch (error) {
-      console.error("Error selecting directory:", error);
-      toast.error("Failed to access the directory. Please try again or use Mock Data for testing.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAlternativeSelect = async () => {
-    try {
-      setIsLoading(true);
-      toast.info("Attempting alternative file selection method...");
-      
+      // Fall back to webkitdirectory for older/restricted browsers
       const input = document.createElement('input');
       input.type = 'file';
       input.webkitdirectory = true; // Non-standard attribute
@@ -87,10 +78,9 @@ const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUpl
       
       input.click();
     } catch (error) {
-      console.error("Error with alternative select:", error);
-      toast.error("Alternative method failed. Please try another approach.");
+      console.error("Error with directory select:", error);
+      toast.error("Failed to access the directory. Please try again or use Mock Data for testing.");
       setIsLoading(false);
-      onUseMockData();
     }
   };
 
@@ -294,7 +284,7 @@ To pull future updates from your GitHub repository:
 \`\`\`
 git pull origin main
 npm install
-\`\`\`
+\`\`\`;
 `;
 
     // Create a blob and download it
@@ -438,6 +428,7 @@ If you can't access the repository or download the ZIP:
           className="gap-2"
           disabled={isLoading}
         >
+          <FolderOpen className="h-4 w-4" />
           {isLoading ? "Scanning..." : "Select Directory"}
         </Button>
         
@@ -452,15 +443,6 @@ If you can't access the repository or download the ZIP:
       </div>
       
       <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-4">
-        <Button
-          onClick={handleAlternativeSelect}
-          variant="outline" 
-          className="gap-2"
-        >
-          <Upload className="h-4 w-4" />
-          Alternative Directory Selection
-        </Button>
-        
         <Button
           onClick={handleBatchFileUpload}
           variant="outline"
@@ -503,7 +485,7 @@ If you can't access the repository or download the ZIP:
       </div>
       
       <p className="text-xs text-muted-foreground mt-4">
-        Having trouble? Try the "Upload Individual Files" option or "Alternative Directory Selection" which may work better in corporate environments.
+        Having trouble? Try the "Upload Individual Files" option which may work better in corporate environments.
         If all else fails, use Mock Data for testing the application features.
       </p>
     </div>

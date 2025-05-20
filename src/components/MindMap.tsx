@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { DirectoryNode } from "@/types/filesystem";
 import { cn } from "@/lib/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { toast } from "sonner";
 
 interface MindMapProps {
   data: DirectoryNode | null;
@@ -34,6 +35,30 @@ const MindMap = ({ data }: MindMapProps) => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  // Function to open file in explorer
+  const openInExplorer = (path: string) => {
+    // Check if the file is from a mock dataset
+    if (path.startsWith('/mock') || !path) {
+      toast.info("This is a mock file path. In a real environment, this would open your file explorer.");
+      return;
+    }
+
+    try {
+      // Try to use the File System Access API if available
+      if ('showDirectoryPicker' in window) {
+        toast.info(`Attempting to navigate to: ${path}`);
+        // Unfortunately, we can't directly navigate to a specific path due to security restrictions
+        // We can only show a message explaining what would happen in a desktop app
+        toast.info("In a desktop application, this would open your file explorer to this path");
+      } else {
+        toast.warning("Your browser doesn't support file system navigation");
+      }
+    } catch (error) {
+      console.error("Error opening file explorer:", error);
+      toast.error("Unable to open file explorer due to browser restrictions");
+    }
+  };
 
   useEffect(() => {
     if (!data || !svgRef.current) return;
@@ -106,14 +131,27 @@ const MindMap = ({ data }: MindMapProps) => {
       .attr("fill", "currentColor")
       .attr("class", "node-text");
 
-    // Add invisible rectangle for better hover detection
-    node.append("rect")
-      .attr("width", 10)
-      .attr("height", 10)
-      .attr("x", -5)
-      .attr("y", -5)
+    // Add click handler for files/directories
+    node.append("circle")
+      .attr("r", 15) // Larger invisible circle for better click target
       .attr("fill", "transparent")
-      .attr("class", "hover-target");
+      .attr("class", "click-target")
+      .style("cursor", "pointer")
+      .on("click", (event, d) => {
+        if (!d.data.isDirectory) {
+          openInExplorer(d.data.path);
+        }
+      });
+
+    // Add tooltip via SVG title element
+    node.append("title")
+      .text(d => {
+        const name = d.data.name;
+        const size = d.data.size ? ` (${formatBytes(d.data.size)})` : '';
+        const pathInfo = d.data.path ? `\nPath: ${d.data.path}` : '';
+        const typeInfo = d.data.type ? `\nType: ${d.data.type}` : '';
+        return `${name}${size}${pathInfo}${typeInfo}`;
+      });
 
     // Add zoom capabilities with smoother zooming
     const zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -123,10 +161,6 @@ const MindMap = ({ data }: MindMapProps) => {
       });
 
     svg.call(zoom as any);
-    
-    // Add tooltips for full file names
-    node.append("title")
-      .text(d => `${d.data.name}${d.data.size ? ` (${formatBytes(d.data.size)})` : ''}`);
 
   }, [data, dimensions]);
   
@@ -171,6 +205,9 @@ const MindMap = ({ data }: MindMapProps) => {
         </div>
         <div className="flex items-center gap-2 mt-1">
           <span className="italic text-muted-foreground text-[10px]">Hover over nodes to see full names</span>
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="italic text-muted-foreground text-[10px]">Click on files to open in explorer</span>
         </div>
       </div>
     </div>

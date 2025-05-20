@@ -10,8 +10,9 @@ import { AnalysisResult, DirectoryNode } from "@/types/filesystem";
 import { scanFileSystem } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FolderTree, FileSearch } from "lucide-react";
+import { FolderTree, FileSearch, ArrowLeft } from "lucide-react";
 import { mockFileSystemData } from "@/lib/mockData";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -41,6 +42,10 @@ const Index = () => {
       setAnalysisResult(mockData);
       setIsLoading(false);
     }, 1500);
+  };
+
+  const handleBackToFileSelect = () => {
+    setAnalysisResult(null);
   };
 
   return (
@@ -74,6 +79,19 @@ const Index = () => {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Back Button */}
+            <div className="flex justify-between items-center">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleBackToFileSelect}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to File Selection
+              </Button>
+            </div>
+            
             {/* Stats Overview */}
             <DirectoryStats stats={analysisResult.stats} />
             
@@ -98,7 +116,10 @@ const Index = () => {
               </TabsContent>
               
               <TabsContent value="recommendations" className="mt-4">
-                <RecommendationCard recommendations={analysisResult.recommendations} />
+                <RecommendationCard 
+                  recommendations={analysisResult.recommendations} 
+                  duplicates={analysisResult.duplicates}
+                />
               </TabsContent>
             </Tabs>
           </div>
