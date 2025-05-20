@@ -1,3 +1,4 @@
+
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { AnalysisResult, DirectoryNode, DuplicateGroup, FileStats, Recommendation } from "@/types/filesystem";
@@ -136,13 +137,15 @@ export async function scanFileSystem(directoryEntry: FileSystemDirectoryEntry): 
                       if (fileHashes.has(hash)) {
                         const group = fileHashes.get(hash)!;
                         group.paths.push(fileNode.path);
+                        group.fullFilenames.push(file.name);
                         fileNode.isDuplicate = true;
                       } else {
                         fileHashes.set(hash, {
                           hash,
                           fileName: file.name,
                           size: file.size,
-                          paths: [fileNode.path]
+                          paths: [fileNode.path],
+                          fullFilenames: [file.name]
                         });
                       }
                     }
@@ -277,13 +280,15 @@ export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult
         if (fileHashes.has(hash)) {
           const group = fileHashes.get(hash)!;
           group.paths.push(fileNode.path);
+          group.fullFilenames.push(fileName); // Add the full filename
           fileNode.isDuplicate = true;
         } else {
           fileHashes.set(hash, {
             hash,
             fileName: file.name,
             size: file.size,
-            paths: [fileNode.path]
+            paths: [fileNode.path],
+            fullFilenames: [fileName] // Initialize with the full filename
           });
         }
       }

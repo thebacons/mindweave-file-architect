@@ -204,6 +204,11 @@ const createMockDuplicates = (): DuplicateGroup[] => {
         "/root/Pictures/Vacation/beach.jpg",
         "/root/Pictures/Vacation/beach_copy.jpg",
         "/root/Downloads/backup/old_photos/beach.jpg"
+      ],
+      fullFilenames: [
+        "beach.jpg",
+        "beach_copy.jpg",
+        "beach.jpg"
       ]
     },
     {
@@ -213,6 +218,10 @@ const createMockDuplicates = (): DuplicateGroup[] => {
       paths: [
         "/root/Documents/Work/Project A/proposal.docx",
         "/root/Documents/Work/Project A/old/proposal_v1.docx"
+      ],
+      fullFilenames: [
+        "proposal.docx",
+        "proposal_v1.docx"
       ]
     }
   ];
