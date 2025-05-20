@@ -71,7 +71,7 @@ const DuplicatesTable = ({ duplicates }: DuplicatesTableProps) => {
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
-                <TableHead className="w-[300px]">File</TableHead>
+                <TableHead className="w-[450px]">File</TableHead>
                 <TableHead className="w-[100px]">Size</TableHead>
                 <TableHead>Locations</TableHead>
               </TableRow>
@@ -79,12 +79,12 @@ const DuplicatesTable = ({ duplicates }: DuplicatesTableProps) => {
             <TableBody>
               {duplicates.map((group, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium max-w-[300px]">
+                  <TableCell className="font-medium">
                     <HoverCard>
                       <HoverCardTrigger asChild>
-                        <div className="truncate cursor-help">{group.fileName}</div>
+                        <div className="truncate cursor-help max-w-[430px]">{group.fileName}</div>
                       </HoverCardTrigger>
-                      <HoverCardContent side="top" className="w-[400px]">
+                      <HoverCardContent side="top" className="w-[500px]">
                         <div className="space-y-1">
                           <p className="text-sm font-medium">Full filename:</p>
                           <p className="text-xs break-all">{group.fileName}</p>
@@ -107,9 +107,12 @@ const DuplicatesTable = ({ duplicates }: DuplicatesTableProps) => {
                           <HoverCard key={i}>
                             <HoverCardTrigger asChild>
                               <div className="truncate pb-1 border-b border-border last:border-0 last:pb-0 mb-1 last:mb-0 cursor-help">
-                                {path}
+                                <div className="flex items-start">
+                                  <div className="mr-2 flex-shrink-0 text-muted-foreground">{i+1}.</div>
+                                  <div className="flex-1 truncate">{path}</div>
+                                </div>
                                 {diffHighlight && diffHighlight.position > 0 && (
-                                  <div className="mt-1 text-[11px]">
+                                  <div className="mt-1 ml-5 text-[11px]">
                                     <span className="text-muted-foreground">Differs at: </span>
                                     <span className="font-mono bg-muted px-1 rounded">
                                       {diffHighlight.common}
@@ -121,7 +124,7 @@ const DuplicatesTable = ({ duplicates }: DuplicatesTableProps) => {
                                 )}
                               </div>
                             </HoverCardTrigger>
-                            <HoverCardContent side="top" className="w-[400px]">
+                            <HoverCardContent side="top" className="w-[500px]">
                               <div className="space-y-2">
                                 <div>
                                   <p className="text-sm font-medium">Full filename:</p>
