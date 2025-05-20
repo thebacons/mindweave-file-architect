@@ -1,12 +1,96 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from "react";
+import FileUploader from "@/components/FileUploader";
+import MindMap from "@/components/MindMap";
+import DirectoryStats from "@/components/DirectoryStats";
+import DuplicatesTable from "@/components/DuplicatesTable";
+import RecommendationCard from "@/components/RecommendationCard";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import { AnalysisResult, DirectoryNode } from "@/types/filesystem";
+import { scanFileSystem } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FolderTree, FileSearch } from "lucide-react";
 
 const Index = () => {
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleFilesLoaded = async (directoryEntry: FileSystemDirectoryEntry) => {
+    setIsLoading(true);
+    try {
+      const result = await scanFileSystem(directoryEntry);
+      setAnalysisResult(result);
+    } catch (error) {
+      console.error("Error analyzing files:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b border-border">
+        <div className="container flex justify-between items-center py-4">
+          <div className="flex items-center gap-2">
+            <FolderTree className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold">FileSystem Mindmap</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <FileSearch className="h-5 w-5 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">AI File System Analyzer</span>
+          </div>
+        </div>
+      </header>
+
+      <LoadingOverlay 
+        isLoading={isLoading}
+        message="Analyzing your file system..." 
+      />
+      
+      <main className="container py-6 flex-1">
+        {!analysisResult ? (
+          <div className="max-w-xl mx-auto mt-10">
+            <FileUploader onFilesLoaded={handleFilesLoaded} />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Stats Overview */}
+            <DirectoryStats stats={analysisResult.stats} />
+            
+            {/* Tabs for different views */}
+            <Tabs defaultValue="mindmap" className="w-full">
+              <TabsList>
+                <TabsTrigger value="mindmap">File System Mindmap</TabsTrigger>
+                <TabsTrigger value="duplicates">Duplicate Files</TabsTrigger>
+                <TabsTrigger value="recommendations">AI Recommendations</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="mindmap" className="mt-4">
+                <Card className="w-full h-[600px]">
+                  <CardContent className="p-6 h-full">
+                    <MindMap data={analysisResult.rootNode} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="duplicates" className="mt-4">
+                <DuplicatesTable duplicates={analysisResult.duplicates} />
+              </TabsContent>
+              
+              <TabsContent value="recommendations" className="mt-4">
+                <RecommendationCard recommendations={analysisResult.recommendations} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
+      </main>
+      
+      <footer className="border-t border-border py-4">
+        <div className="container text-center text-sm text-muted-foreground">
+          <p>AI File System Analyzer - Local Privacy-First App</p>
+        </div>
+      </footer>
     </div>
   );
 };
