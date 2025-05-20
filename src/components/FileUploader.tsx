@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FolderOpen, Database, Download, Github } from "lucide-react";
+import { FolderOpen, Database, Download, Github, FileDown } from "lucide-react";
 import { mockFileSystemData } from "@/lib/mockData";
 
 interface FileUploaderProps {
@@ -67,7 +67,7 @@ cd file-architect
 npm install
 \`\`\`
 
-5. Replace the project files with the ones from this app
+5. Replace the project files with the ones from this app (see the "How to Download Source Files" section below)
 6. Install the required dependencies:
 
 \`\`\`
@@ -110,7 +110,7 @@ git remote add origin https://github.com/TheBacons/file-architect.git
 git push -u origin main
 \`\`\`
 
-3. Replace the project files with the ones from this app
+3. Replace the project files with the ones from this app (see the "How to Download Source Files" section below)
 4. Install dependencies:
 
 \`\`\`
@@ -136,6 +136,28 @@ cd file-architect
 npm install
 npm run dev
 \`\`\`
+
+## How to Download Source Files
+
+There are several ways to get the source files from this app:
+
+### Method 1: Download through Lovable Interface
+1. In the Lovable interface, click on "Dev Mode" in the top left corner to see the code
+2. Click on each file in the file explorer
+3. Copy and paste the content into your local files with the same structure
+
+### Method 2: Export Files from Lovable
+1. Click on the project name in the top left corner
+2. Go to "Settings"
+3. Click on "Export project"
+4. Download the ZIP file and extract it
+5. Copy the contents into your local project
+
+### Method 3: Connect to GitHub
+1. Click on the GitHub icon in the top right corner of the Lovable interface
+2. Follow the instructions to connect your GitHub account
+3. Push the project to your GitHub repository
+4. Clone the repository to your local machine
 `;
 
     // Create a blob and download it
@@ -150,6 +172,103 @@ npm run dev
     URL.revokeObjectURL(url);
 
     toast.success("GitHub setup instructions downloaded successfully!");
+  };
+
+  const handleDownloadProjectFiles = () => {
+    const projectStructure = `
+# Project Structure
+
+This is the structure of the FileArchitect project. You'll need to create these files and folders in your local project.
+
+\`\`\`
+src/
+├── components/
+│   ├── DirectoryStats.tsx
+│   ├── DuplicatesTable.tsx
+│   ├── FileUploader.tsx
+│   ├── LoadingOverlay.tsx
+│   ├── MindMap.tsx
+│   ├── RecommendationCard.tsx
+│   └── ui/
+│       ├── accordion.tsx
+│       ├── alert-dialog.tsx
+│       ├── alert.tsx
+│       ├── aspect-ratio.tsx
+│       ├── avatar.tsx
+│       ├── badge.tsx
+│       ├── button.tsx
+│       ├── calendar.tsx
+│       ├── card.tsx
+│       ├── carousel.tsx
+│       ├── chart.tsx
+│       ├── checkbox.tsx
+│       ├── collapsible.tsx
+│       ├── command.tsx
+│       ├── context-menu.tsx
+│       ├── dialog.tsx
+│       ├── dropdown-menu.tsx
+│       ├── form.tsx
+│       ├── hover-card.tsx
+│       ├── input-otp.tsx
+│       ├── input.tsx
+│       ├── label.tsx
+│       ├── menubar.tsx
+│       ├── navigation-menu.tsx
+│       ├── pagination.tsx
+│       ├── popover.tsx
+│       ├── progress.tsx
+│       ├── radio-group.tsx
+│       ├── resizable.tsx
+│       ├── scroll-area.tsx
+│       ├── select.tsx
+│       ├── separator.tsx
+│       ├── sheet.tsx
+│       ├── sidebar.tsx
+│       ├── skeleton.tsx
+│       ├── slider.tsx
+│       ├── sonner.tsx
+│       ├── switch.tsx
+│       ├── table.tsx
+│       ├── tabs.tsx
+│       ├── textarea.tsx
+│       ├── toast.tsx
+│       ├── toaster.tsx
+│       ├── toggle-group.tsx
+│       ├── toggle.tsx
+│       ├── tooltip.tsx
+│       └── use-toast.ts
+├── hooks/
+│   ├── use-mobile.tsx
+│   └── use-toast.ts
+├── lib/
+│   ├── mockData.ts
+│   └── utils.ts
+├── pages/
+│   ├── Index.tsx
+│   └── NotFound.tsx
+└── types/
+    └── filesystem.ts
+\`\`\`
+
+To access these files:
+
+1. Open Dev Mode in the Lovable interface (top left corner)
+2. Export the project from Settings or copy each file manually
+3. Make sure to install all dependencies (listed in the setup instructions)
+`;
+
+    // Create a blob and download it
+    const blob = new Blob([projectStructure], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'project-structure.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success("Project structure file downloaded successfully!");
   };
 
   return (
@@ -178,7 +297,7 @@ npm run dev
         </Button>
       </div>
       
-      <div className="mt-6 w-full max-w-md">
+      <div className="mt-6 w-full max-w-md flex flex-col gap-3">
         <Button
           onClick={handleDownloadInstructions}
           variant="outline"
@@ -187,6 +306,15 @@ npm run dev
           <Github className="h-4 w-4 mr-1" />
           <Download className="h-4 w-4" />
           Download GitHub Setup Instructions
+        </Button>
+        
+        <Button
+          onClick={handleDownloadProjectFiles}
+          variant="outline"
+          className="w-full gap-2"
+        >
+          <FileDown className="h-4 w-4" />
+          Download Project Structure
         </Button>
       </div>
       
