@@ -15,6 +15,7 @@ export interface DuplicateGroup {
   fileName: string;
   size: number;
   paths: string[];
+  fullFilenames: string[]; // Added to store the complete filenames
 }
 
 export interface FileStats {

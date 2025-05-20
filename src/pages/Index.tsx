@@ -10,7 +10,7 @@ import { AnalysisResult, DirectoryNode } from "@/types/filesystem";
 import { scanFileSystem } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FolderTree, FileSearch, ArrowLeft } from "lucide-react";
+import { FolderTree, FileSearch, ArrowLeft, ExternalLink } from "lucide-react";
 import { mockFileSystemData } from "@/lib/mockData";
 import { Button } from "@/components/ui/button";
 
@@ -28,10 +28,6 @@ const Index = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleUseFilesArray = (result: AnalysisResult) => {
-    setAnalysisResult(result);
   };
 
   const handleUseMockData = () => {
@@ -60,9 +56,20 @@ const Index = () => {
             <FolderTree className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">FileSystem Mindmap</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <FileSearch className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">AI File System Analyzer</span>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={openStackblitz}
+              className="gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open in Stackblitz
+            </Button>
+            <div className="flex items-center gap-2">
+              <FileSearch className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">AI File System Analyzer</span>
+            </div>
           </div>
         </div>
       </header>
@@ -78,7 +85,6 @@ const Index = () => {
             <FileUploader 
               onFilesLoaded={handleFilesLoaded}
               onUseMockData={handleUseMockData}
-              onUseFilesArray={handleUseFilesArray}
             />
           </div>
         ) : (
@@ -93,6 +99,16 @@ const Index = () => {
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back to File Selection
+              </Button>
+              
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={openStackblitz}
+                className="gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open in Stackblitz
               </Button>
             </div>
             

@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Recommendation, DuplicateGroup } from "@/types/filesystem";
-import { LightbulbIcon, Trash2 } from "lucide-react";
+import { LightbulbIcon, Trash2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -56,6 +56,13 @@ const RecommendationCard = ({ recommendations, duplicates = [] }: Recommendation
     });
   };
 
+  // External tools for duplicate file cleaning
+  const duplicateCleaningTools = [
+    { name: "Duplicate File Finder", url: "https://www.ashisoft.com/duplicate-file-finder/" },
+    { name: "CCleaner", url: "https://www.ccleaner.com/" },
+    { name: "dupeGuru", url: "https://dupeguru.voltaicideas.net/" },
+  ];
+
   if (!recommendations.length && !duplicates.length) {
     return null;
   }
@@ -95,14 +102,20 @@ const RecommendationCard = ({ recommendations, duplicates = [] }: Recommendation
                     onChange={() => toggleDuplicateSelection(dup.hash)}
                     className="mr-1"
                   />
-                  <div>
+                  <div className="w-full">
                     <label htmlFor={dup.hash} className="text-sm font-medium cursor-pointer">
                       {dup.fileName} ({dup.paths.length} copies, {formatBytes(dup.size * dup.paths.length)})
                     </label>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {dup.paths.slice(0, 2).map((path, i) => (
-                        <div key={i} className="truncate">{path}</div>
-                      ))}
+                    <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                      {dup.paths.slice(0, 2).map((path, i) => {
+                        const fullFilename = dup.fullFilenames?.[i] || path.split('/').pop() || "";
+                        return (
+                          <div key={i} className="flex justify-between">
+                            <div className="truncate max-w-[80%]" title={path}>{path}</div>
+                            <div className="text-primary-foreground/70">{fullFilename}</div>
+                          </div>
+                        );
+                      })}
                       {dup.paths.length > 2 && (
                         <div>+ {dup.paths.length - 2} more locations</div>
                       )}
@@ -134,9 +147,26 @@ const RecommendationCard = ({ recommendations, duplicates = [] }: Recommendation
               </Button>
             </div>
             
-            <div className="mt-3 text-xs text-muted-foreground">
-              <p>Note: In this web version, files aren't actually deleted due to browser security restrictions.</p>
-              <p>For real file deletion, consider using dedicated apps like <a href="https://www.google.com/search?q=best+duplicate+file+cleaner+tools" target="_blank" rel="noreferrer" className="underline hover:text-primary">these tools</a>.</p>
+            <div className="mt-4 text-xs">
+              <p className="mb-1 text-muted-foreground">Note: In this web version, files aren't actually deleted due to browser security restrictions.</p>
+              
+              <div className="mt-3">
+                <h4 className="font-medium mb-1">Recommended Duplicate File Cleaning Tools:</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {duplicateCleaningTools.map((tool, index) => (
+                    <a 
+                      key={index} 
+                      href={tool.url} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="flex items-center gap-1 p-2 border rounded hover:bg-secondary text-sm"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      <span>{tool.name}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -149,6 +179,19 @@ const RecommendationCard = ({ recommendations, duplicates = [] }: Recommendation
               {rec.suggestion && (
                 <div className="mt-2 p-2 bg-background rounded-md text-xs font-mono">
                   {rec.suggestion}
+                </div>
+              )}
+              {rec.actionLink && (
+                <div className="mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => window.open(rec.actionLink, "_blank")}
+                    className="gap-1"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {rec.actionText || "Learn More"}
+                  </Button>
                 </div>
               )}
             </li>

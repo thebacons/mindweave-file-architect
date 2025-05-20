@@ -63,20 +63,26 @@ const DuplicatesTable = ({ duplicates }: DuplicatesTableProps) => {
                   <TableCell>{formatBytes(group.size)}</TableCell>
                   <TableCell>
                     <div className="max-h-20 overflow-y-auto text-xs">
-                      {group.paths.map((path, i) => (
-                        <TooltipProvider key={i}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="truncate pb-1 border-b border-border last:border-0 last:pb-0 mb-1 last:mb-0">
-                                {path}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[500px]">
-                              <p className="break-all">{path}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ))}
+                      {group.paths.map((path, i) => {
+                        const fullFilename = group.fullFilenames?.[i] || path.split('/').pop() || "";
+                        return (
+                          <TooltipProvider key={i}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="truncate pb-1 border-b border-border last:border-0 last:pb-0 mb-1 last:mb-0">
+                                  {path}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[500px]">
+                                <div className="space-y-1">
+                                  <p className="break-all font-medium">Full filename: {fullFilename}</p>
+                                  <p className="break-all">Path: {path}</p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      })}
                     </div>
                   </TableCell>
                 </TableRow>

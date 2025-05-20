@@ -116,7 +116,7 @@ const MindMap = ({ data }: MindMapProps) => {
       .attr("stroke-width", 1.5);
 
     // Truncate text if too long (to prevent overlap)
-    const truncateText = (text: string, maxLength = 20) => {
+    const truncateText = (text: string, maxLength = 15) => {
       return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
     };
 
@@ -125,7 +125,7 @@ const MindMap = ({ data }: MindMapProps) => {
       .attr("dy", "0.31em")
       .attr("x", d => d.children ? -10 : 10)
       .attr("text-anchor", d => d.children ? "end" : "start")
-      .attr("font-size", "10px") // Smaller font size
+      .attr("font-size", "9px") // Even smaller font size
       .attr("pointer-events", "none") // Prevent the text from capturing mouse events
       .text(d => truncateText(d.data.name))
       .attr("fill", "currentColor")
@@ -138,12 +138,10 @@ const MindMap = ({ data }: MindMapProps) => {
       .attr("class", "click-target")
       .style("cursor", "pointer")
       .on("click", (event, d) => {
-        if (!d.data.isDirectory) {
-          openInExplorer(d.data.path);
-        }
+        openInExplorer(d.data.path);
       });
 
-    // Add tooltip via SVG title element
+    // Enhanced tooltip with full filename, size, and path
     node.append("title")
       .text(d => {
         const name = d.data.name;
@@ -204,10 +202,10 @@ const MindMap = ({ data }: MindMapProps) => {
           <span>Duplicate</span>
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <span className="italic text-muted-foreground text-[10px]">Hover over nodes to see full names</span>
+          <span className="italic text-muted-foreground text-[10px]">Hover over nodes to see full details</span>
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <span className="italic text-muted-foreground text-[10px]">Click on files to open in explorer</span>
+          <span className="italic text-muted-foreground text-[10px]">Click on nodes to attempt opening in explorer</span>
         </div>
       </div>
     </div>
