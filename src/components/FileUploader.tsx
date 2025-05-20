@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FolderOpen, Database } from "lucide-react";
+import { FolderOpen, Database, Download } from "lucide-react";
 import { mockFileSystemData } from "@/lib/mockData";
 
 interface FileUploaderProps {
@@ -40,7 +40,7 @@ const FileUploader = ({ onFilesLoaded, onUseMockData }: FileUploaderProps) => {
       toast.success("Directory selected successfully!");
     } catch (error) {
       console.error("Error selecting directory:", error);
-      toast.error("Failed to access the directory. Please try again.");
+      toast.error("Failed to access the directory. Please try again or use Mock Data for testing.");
     } finally {
       setIsLoading(false);
     }
@@ -49,6 +49,51 @@ const FileUploader = ({ onFilesLoaded, onUseMockData }: FileUploaderProps) => {
   const handleUseMockData = () => {
     toast.success("Using mock data for visualization");
     onUseMockData();
+  };
+
+  const handleDownloadInstructions = () => {
+    const instructions = `
+# Running FileArchitect Locally
+
+1. Make sure you have Node.js installed (version 16 or higher)
+2. Create a new directory for the project
+3. Open your terminal in that directory
+4. Run the following commands:
+
+\`\`\`
+npm create vite@latest file-architect -- --template react-ts
+cd file-architect
+npm install
+\`\`\`
+
+5. Replace the project files with the ones from this app
+6. Install the required dependencies:
+
+\`\`\`
+npm install @radix-ui/react-* lucide-react sonner recharts tailwind-merge clsx class-variance-authority
+\`\`\`
+
+7. Start the development server:
+
+\`\`\`
+npm run dev
+\`\`\`
+
+8. Open your browser and navigate to http://localhost:5173
+`;
+
+    // Create a blob and download it
+    const blob = new Blob([instructions], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'setup-instructions.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success("Setup instructions downloaded successfully!");
   };
 
   return (
@@ -76,8 +121,20 @@ const FileUploader = ({ onFilesLoaded, onUseMockData }: FileUploaderProps) => {
           Use Mock Data
         </Button>
       </div>
+      
+      <div className="mt-6 w-full max-w-md">
+        <Button
+          onClick={handleDownloadInstructions}
+          variant="outline"
+          className="w-full gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Download Local Setup Instructions
+        </Button>
+      </div>
+      
       <p className="text-xs text-muted-foreground mt-4">
-        Having trouble? The file picker may not work in some browser environments.
+        Having trouble? The file picker may not work in corporate environments due to security restrictions.
       </p>
     </div>
   );
