@@ -30,6 +30,12 @@ const Index = () => {
     }
   };
 
+  // Add new handler for files array processing
+  const handleFilesArrayLoaded = (result: AnalysisResult) => {
+    setAnalysisResult(result);
+    setIsLoading(false);
+  };
+
   const handleUseMockData = () => {
     setIsLoading(true);
     // Simulate a delay for the loading experience
@@ -85,6 +91,7 @@ const Index = () => {
             <FileUploader 
               onFilesLoaded={handleFilesLoaded}
               onUseMockData={handleUseMockData}
+              onUseFilesArray={handleFilesArrayLoaded}
             />
           </div>
         ) : (

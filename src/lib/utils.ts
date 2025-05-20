@@ -1,4 +1,3 @@
-
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { AnalysisResult, DirectoryNode, DuplicateGroup, FileStats, Recommendation } from "@/types/filesystem";
@@ -81,7 +80,12 @@ export function generateFileRecommendations(result: AnalysisResult): Recommendat
   return recommendations;
 }
 
-export async function scanFileSystem(directoryEntry: FileSystemDirectoryEntry): Promise<AnalysisResult> {
+export async function scanFileSystem(directoryEntry: FileSystemDirectoryEntry | any): Promise<AnalysisResult> {
+  // If the directoryEntry is actually an AnalysisResult (from scanFilesViaInput)
+  if (directoryEntry && 'rootNode' in directoryEntry) {
+    return directoryEntry as AnalysisResult;
+  }
+
   const fileHashes = new Map<string, DuplicateGroup>();
   const fileTypes = new Set<string>();
   let totalFiles = 0;
@@ -202,7 +206,7 @@ export async function scanFileSystem(directoryEntry: FileSystemDirectoryEntry): 
   };
 }
 
-// New function for corporate environment file scanning
+// Enhanced scanFilesViaInput function for more reliable file processing
 export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult> {
   const fileHashes = new Map<string, DuplicateGroup>();
   const fileTypes = new Set<string>();
@@ -210,6 +214,7 @@ export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult
   let totalDirs = 0;
   let totalSize = 0;
   let maxDepth = 0;
+  let totalDepth = 0;
   
   // Create a mapping of paths to organize files into a directory structure
   const pathMap = new Map<string, DirectoryNode>();
@@ -220,6 +225,23 @@ export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult
     children: []
   };
   pathMap.set("", rootNode);
+  
+  // Count directories first to calculate proper depth metrics later
+  const dirSet = new Set<string>();
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const fullPath = file.webkitRelativePath;
+    const pathParts = fullPath.split('/');
+    pathParts.pop(); // Remove file name
+    
+    // Add all directory levels to dirSet
+    let currentPath = "";
+    for (const part of pathParts) {
+      currentPath = currentPath ? `${currentPath}/${part}` : part;
+      dirSet.add(currentPath);
+    }
+  }
+  totalDirs = dirSet.size;
   
   // Process each file and build directory structure
   for (let i = 0; i < files.length; i++) {
@@ -236,10 +258,12 @@ export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult
     
     // Create directory nodes for path
     let currentPath = "";
+    let depth = 0;
     for (let j = 0; j < pathParts.length; j++) {
       const part = pathParts[j];
       const parentPath = currentPath;
       currentPath = currentPath ? `${currentPath}/${part}` : part;
+      depth = j + 1;
       
       if (!pathMap.has(currentPath)) {
         const dirNode: DirectoryNode = {
@@ -254,9 +278,9 @@ export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult
         const parent = pathMap.get(parentPath);
         if (parent && parent.children) {
           parent.children.push(dirNode);
-          totalDirs++;
+          totalDepth += depth;
           // Update max depth
-          maxDepth = Math.max(maxDepth, j + 1);
+          maxDepth = Math.max(maxDepth, depth);
         }
       }
     }
@@ -285,7 +309,7 @@ export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult
         } else {
           fileHashes.set(hash, {
             hash,
-            fileName: file.name,
+            fileName: fileName, // Use the actual filename
             size: file.size,
             paths: [fileNode.path],
             fullFilenames: [fileName] // Initialize with the full filename
@@ -301,13 +325,15 @@ export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult
   const duplicates = Array.from(fileHashes.values())
     .filter(group => group.paths.length > 1);
   
+  const avgDepth = totalDirs > 0 ? totalDepth / totalDirs : 0;
+  
   const stats: FileStats = {
     totalSize,
     totalFiles,
     totalDirs,
     duplicateFiles: duplicates.reduce((acc, group) => acc + group.paths.length, 0),
     fileTypes,
-    avgDepth: totalDirs > 0 ? maxDepth / totalDirs : 0,
+    avgDepth,
     maxDepth
   };
   

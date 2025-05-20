@@ -18,31 +18,8 @@ const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUpl
     try {
       setIsLoading(true);
 
-      // First try the modern File System Access API
-      if ('showDirectoryPicker' in window) {
-        try {
-          // @ts-ignore - TypeScript doesn't have types for showDirectoryPicker yet
-          const directoryHandle = await window.showDirectoryPicker({
-            mode: 'read'
-          });
-
-          // Convert directory handle to entry that can be scanned
-          // @ts-ignore - Using non-standard API
-          const directoryEntry = await new Promise<FileSystemDirectoryEntry>((resolve) => {
-            // @ts-ignore - Using FileSystem API
-            resolve(directoryHandle);
-          });
-
-          onFilesLoaded(directoryEntry);
-          toast.success("Directory selected successfully!");
-          return;
-        } catch (error) {
-          console.error("Error selecting directory:", error);
-          // Fall back to the alternative method below
-        }
-      }
-
-      // Fall back to webkitdirectory for older/restricted browsers
+      // Create a standard input element for directory selection
+      // This approach works better across browsers and in iframe environments
       const input = document.createElement('input');
       input.type = 'file';
       input.webkitdirectory = true; // Non-standard attribute
@@ -57,19 +34,25 @@ const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUpl
         try {
           toast.success(`Selected ${input.files.length} files`);
           
-          if (onUseFilesArray) {
-            // Use our new function to process files
-            const result = await scanFilesViaInput(input.files);
-            onUseFilesArray(result);
+          // Process the files directly using the input files array
+          const result = await scanFilesViaInput(input.files);
+          if (result) {
+            // If we have onUseFilesArray handler, use it
+            if (onUseFilesArray) {
+              onUseFilesArray(result);
+            } else {
+              // Otherwise pass the result to the regular handler
+              // by wrapping it in a compatible interface
+              onFilesLoaded(result.rootNode as unknown as FileSystemDirectoryEntry);
+            }
             toast.success("Files analyzed successfully!");
           } else {
-            toast.error("File array handler not implemented");
-            onUseMockData(); // Fallback to mock data
+            throw new Error("Failed to analyze files");
           }
         } catch (error) {
           console.error("Error processing files:", error);
           toast.error("Error processing files. Using mock data instead.");
-          onUseMockData();
+          onUseMockData(); // Fallback to mock data
         } finally {
           setIsLoading(false);
         }
