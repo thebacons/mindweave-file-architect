@@ -1,19 +1,19 @@
 
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
 
-// Function to initialize the app
-function initializeApp() {
-  const rootElement = document.getElementById("root");
+// Simple initialization approach that works well in various environments including Stackblitz
+const container = document.getElementById('root');
 
-  if (rootElement) {
-    const root = createRoot(rootElement);
-    root.render(<App />);
-  } else {
-    console.error("Could not find root element");
-  }
+if (container) {
+  const root = createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+} else {
+  console.error('Failed to find the root element');
 }
-
-// Execute immediately - this works better in Stackblitz environments
-initializeApp();
