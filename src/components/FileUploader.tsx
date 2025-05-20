@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FolderOpen, Database, Download, Github, FileDown, Upload, Server, File } from "lucide-react";
-import { mockFileSystemData } from "@/lib/mockData";
+import { FolderOpen, Database, Github, FileDown, Server } from "lucide-react";
 import { scanFilesViaInput } from "@/lib/utils";
 import { DirectoryNode } from "@/types/filesystem";
 
@@ -84,143 +83,13 @@ const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUpl
     }
   };
 
-  const handleBatchFileUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    
-    input.onchange = async (event) => {
-      if (!input.files || input.files.length === 0) {
-        toast.error("No files selected");
-        return;
-      }
-      
-      toast.success(`Selected ${input.files.length} individual files`);
-      toast.info("Processing individual files (limited directory structure)...");
-      
-      // Create a simplified analysis for individual files
-      if (onUseFilesArray) {
-        try {
-          setIsLoading(true);
-          // Group files by directory based on name patterns
-          const result = await processIndividualFiles(input.files);
-          onUseFilesArray(result);
-        } catch (error) {
-          console.error("Error processing individual files:", error);
-          toast.error("Error processing files. Using mock data instead.");
-          onUseMockData();
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        toast.error("File array handler not implemented");
-        onUseMockData();
-      }
-    };
-    
-    input.click();
-  };
-  
-  // Process individual files without directory structure
-  const processIndividualFiles = async (files: FileList) => {
-    const rootNode: DirectoryNode = {
-      name: "Uploaded Files",
-      path: "",
-      isDirectory: true,
-      children: []
-    };
-    
-    // Create basic file type folders
-    const imageFolder: DirectoryNode = { name: "Images", path: "/Images", isDirectory: true, children: [] };
-    const documentFolder: DirectoryNode = { name: "Documents", path: "/Documents", isDirectory: true, children: [] };
-    const otherFolder: DirectoryNode = { name: "Other", path: "/Other", isDirectory: true, children: [] };
-    
-    rootNode.children.push(imageFolder, documentFolder, otherFolder);
-    
-    let totalSize = 0;
-    const fileTypes = new Set<string>();
-    const fileHashes = new Map();
-    
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const extension = file.name.split('.').pop()?.toLowerCase() || '';
-      fileTypes.add(extension);
-      totalSize += file.size;
-      
-      const hash = await hashFile(file);
-      const fileNode: DirectoryNode = {
-        name: file.name,
-        path: "/" + (file.name),
-        isDirectory: false,
-        size: file.size,
-        type: extension,
-        hash
-      };
-      
-      // Check for duplicates and add to appropriate folder
-      if (hash) {
-        if (fileHashes.has(hash)) {
-          const group = fileHashes.get(hash);
-          group.paths.push(fileNode.path);
-          fileNode.isDuplicate = true;
-        } else {
-          fileHashes.set(hash, {
-            hash,
-            fileName: file.name,
-            size: file.size,
-            paths: [fileNode.path]
-          });
-        }
-      }
-      
-      // Add to appropriate folder based on extension
-      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) {
-        imageFolder.children.push(fileNode);
-      } else if (['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension)) {
-        documentFolder.children.push(fileNode);
-      } else {
-        otherFolder.children.push(fileNode);
-      }
-    }
-    
-    // Simplified stats
-    const duplicates = Array.from(fileHashes.values())
-      .filter(group => group.paths.length > 1);
-    
-    const stats = {
-      totalSize,
-      totalFiles: files.length,
-      totalDirs: 3, // Our basic folders
-      duplicateFiles: duplicates.reduce((acc, group) => acc + group.paths.length - 1, 0),
-      fileTypes,
-      avgDepth: 1,
-      maxDepth: 1
-    };
-    
-    const result = {
-      rootNode,
-      stats,
-      duplicates,
-      recommendations: []
-    };
-    
-    return result;
-  };
-  
-  // Utility function for file hashing (simplified for individual files)
-  const hashFile = async (file: File): Promise<string> => {
-    try {
-      // Just hash the file name and size for quicker processing
-      return `${file.name}-${file.size}-${file.lastModified}`;
-    } catch (error) {
-      console.error("Error hashing file:", error);
-      return "";
-    }
-  };
-
   const handleUseMockData = () => {
     toast.success("Using mock data for visualization");
     onUseMockData();
+  };
+
+  const openStackblitz = () => {
+    window.open("https://stackblitz.com/github/TheBacons/mindweave-file-architect", "_blank");
   };
 
   const handleDownloadInstructions = () => {
@@ -442,24 +311,22 @@ If you can't access the repository or download the ZIP:
         </Button>
       </div>
       
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-4">
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-6">
         <Button
-          onClick={handleBatchFileUpload}
+          onClick={openStackblitz}
           variant="outline"
           className="gap-2"
         >
-          <File className="h-4 w-4" />
-          Upload Individual Files
+          <Server className="h-4 w-4" />
+          Open in Stackblitz
         </Button>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-6">
+        
         <Button
           onClick={() => window.open("https://github.com/TheBacons/mindweave-file-architect", "_blank")}
           variant="outline"
           className="gap-2"
         >
-          <Server className="h-4 w-4" />
+          <Github className="h-4 w-4" />
           View on GitHub
         </Button>
       </div>
@@ -485,8 +352,7 @@ If you can't access the repository or download the ZIP:
       </div>
       
       <p className="text-xs text-muted-foreground mt-4">
-        Having trouble? Try the "Upload Individual Files" option which may work better in corporate environments.
-        If all else fails, use Mock Data for testing the application features.
+        Having trouble? Use Mock Data for testing the application features or try opening the project directly in Stackblitz.
       </p>
     </div>
   );

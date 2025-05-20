@@ -48,6 +48,10 @@ const Index = () => {
     setAnalysisResult(null);
   };
 
+  const openStackblitz = () => {
+    window.open("https://stackblitz.com/github/TheBacons/mindweave-file-architect", "_blank");
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border">
@@ -128,7 +132,7 @@ const Index = () => {
       
       <footer className="border-t border-border py-4">
         <div className="container text-center text-sm text-muted-foreground">
-          <p>AI File System Analyzer - Local Privacy-First App</p>
+          <p>mindweave-file-architect © {new Date().getFullYear()} TheBacons. Developed by Colin Bacon.</p>
         </div>
       </footer>
     </div>

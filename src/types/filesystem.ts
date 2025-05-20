@@ -31,6 +31,8 @@ export interface Recommendation {
   title: string;
   description: string;
   suggestion?: string;
+  actionLink?: string;
+  actionText?: string;
 }
 
 export interface AnalysisResult {

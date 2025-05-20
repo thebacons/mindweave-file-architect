@@ -10,6 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DuplicateGroup } from "@/types/filesystem";
 import { formatBytes } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DuplicatesTableProps {
   duplicates: DuplicateGroup[];
@@ -47,16 +48,34 @@ const DuplicatesTable = ({ duplicates }: DuplicatesTableProps) => {
             <TableBody>
               {duplicates.map((group, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-medium">
-                    {group.fileName}
+                  <TableCell className="font-medium max-w-[250px]">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="truncate">{group.fileName}</div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="max-w-[400px] break-all">{group.fileName}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
                   <TableCell>{formatBytes(group.size)}</TableCell>
                   <TableCell>
                     <div className="max-h-20 overflow-y-auto text-xs">
                       {group.paths.map((path, i) => (
-                        <div key={i} className="pb-1 border-b border-border last:border-0 last:pb-0 mb-1 last:mb-0">
-                          {path}
-                        </div>
+                        <TooltipProvider key={i}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="truncate pb-1 border-b border-border last:border-0 last:pb-0 mb-1 last:mb-0">
+                                {path}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[500px]">
+                              <p className="break-all">{path}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ))}
                     </div>
                   </TableCell>
