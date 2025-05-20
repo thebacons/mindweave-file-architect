@@ -2,13 +2,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Database } from "lucide-react";
+import { mockFileSystemData } from "@/lib/mockData";
 
 interface FileUploaderProps {
   onFilesLoaded: (files: FileSystemDirectoryEntry) => void;
+  onUseMockData: () => void;
 }
 
-const FileUploader = ({ onFilesLoaded }: FileUploaderProps) => {
+const FileUploader = ({ onFilesLoaded, onUseMockData }: FileUploaderProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDirectorySelect = async () => {
@@ -44,6 +46,11 @@ const FileUploader = ({ onFilesLoaded }: FileUploaderProps) => {
     }
   };
 
+  const handleUseMockData = () => {
+    toast.success("Using mock data for visualization");
+    onUseMockData();
+  };
+
   return (
     <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-secondary rounded-lg">
       <FolderOpen className="h-12 w-12 text-primary mb-4" />
@@ -51,13 +58,27 @@ const FileUploader = ({ onFilesLoaded }: FileUploaderProps) => {
       <p className="text-muted-foreground mb-4 text-center">
         Choose a directory to scan for files and create a mindmap visualization.
       </p>
-      <Button 
-        onClick={handleDirectorySelect} 
-        className="gap-2"
-        disabled={isLoading}
-      >
-        {isLoading ? "Scanning..." : "Select Directory"}
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center">
+        <Button 
+          onClick={handleDirectorySelect} 
+          className="gap-2"
+          disabled={isLoading}
+        >
+          {isLoading ? "Scanning..." : "Select Directory"}
+        </Button>
+        
+        <Button
+          onClick={handleUseMockData}
+          variant="secondary"
+          className="gap-2"
+        >
+          <Database className="h-4 w-4" />
+          Use Mock Data
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground mt-4">
+        Having trouble? The file picker may not work in some browser environments.
+      </p>
     </div>
   );
 };

@@ -11,6 +11,7 @@ import { scanFileSystem } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FolderTree, FileSearch } from "lucide-react";
+import { mockFileSystemData } from "@/lib/mockData";
 
 const Index = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -26,6 +27,16 @@ const Index = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleUseMockData = () => {
+    setIsLoading(true);
+    // Simulate a delay for the loading experience
+    setTimeout(() => {
+      const mockData = mockFileSystemData();
+      setAnalysisResult(mockData);
+      setIsLoading(false);
+    }, 1500);
   };
 
   return (
@@ -51,7 +62,10 @@ const Index = () => {
       <main className="container py-6 flex-1">
         {!analysisResult ? (
           <div className="max-w-xl mx-auto mt-10">
-            <FileUploader onFilesLoaded={handleFilesLoaded} />
+            <FileUploader 
+              onFilesLoaded={handleFilesLoaded}
+              onUseMockData={handleUseMockData} 
+            />
           </div>
         ) : (
           <div className="space-y-6">
