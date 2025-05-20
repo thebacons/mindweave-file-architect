@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -53,111 +52,58 @@ const FileUploader = ({ onFilesLoaded, onUseMockData }: FileUploaderProps) => {
 
   const handleDownloadInstructions = () => {
     const instructions = `
-# Running FileArchitect Locally (Including GitHub Setup)
+# Cloning and Running FileArchitect From Your GitHub Account (TheBacons)
 
-## Option 1: Quick Setup
-1. Make sure you have Node.js installed (version 16 or higher)
-2. Create a new directory for the project
-3. Open your terminal in that directory
-4. Run the following commands:
+## Step 1: Clone the Repository
+1. Open your terminal or command prompt
+2. Navigate to the directory where you want to clone the project
+3. Run the following command:
 
 \`\`\`
-npm create vite@latest file-architect -- --template react-ts
-cd file-architect
+git clone https://github.com/TheBacons/mindweave-file-architect.git
+cd mindweave-file-architect
+\`\`\`
+
+## Step 2: Install Dependencies
+Once you have cloned the repository, install all the necessary dependencies:
+
+\`\`\`
 npm install
 \`\`\`
 
-5. Replace the project files with the ones from this app (see the "How to Download Source Files" section below)
-6. Install the required dependencies:
-
-\`\`\`
-npm install @radix-ui/react-* lucide-react sonner recharts tailwind-merge clsx class-variance-authority @tanstack/react-query react-router-dom
-\`\`\`
-
-7. Start the development server:
+## Step 3: Run the Application
+After installing the dependencies, start the development server:
 
 \`\`\`
 npm run dev
 \`\`\`
 
-8. Open your browser and navigate to http://localhost:5173
+Then open your browser and navigate to the URL displayed in your terminal (typically http://localhost:5173 or http://localhost:8080).
 
-## Option 2: Setup With GitHub (TheBacons Account)
+## Troubleshooting
 
-### Creating the GitHub Repository
-1. Log in to your GitHub account (TheBacons)
-2. Click the "+" icon in the top-right corner and select "New repository"
-3. Name your repository (e.g., "file-architect")
-4. Choose whether to make it public or private
-5. Click "Create repository"
+### If You See "Repository Not Found" Error
+Make sure you're logged in to GitHub and have access to your repository.
 
-### Setting Up the Project Locally
-1. Create a new Vite React TypeScript project:
+### If the File System API Doesn't Work
+Some browsers or environments (especially corporate environments) may restrict the File System Access API. In that case:
+- Use the "Use Mock Data" button in the application to test functionality
+- Try running the application in Chrome or Edge in a non-corporate environment
+- Ensure you're running the application through a proper web server (not just opening HTML files directly)
 
-\`\`\`
-npm create vite@latest file-architect -- --template react-ts
-cd file-architect
-\`\`\`
+### If npm install Fails
+Try the following:
+1. Check your Node.js version (should be v16 or higher): \`node -v\`
+2. Clear npm cache: \`npm cache clean --force\`
+3. Try: \`npm install --legacy-peer-deps\`
 
-2. Initialize Git and connect to your GitHub repository:
-
-\`\`\`
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/TheBacons/file-architect.git
-git push -u origin main
-\`\`\`
-
-3. Replace the project files with the ones from this app (see the "How to Download Source Files" section below)
-4. Install dependencies:
+## Future Updates
+To pull future updates from your GitHub repository:
 
 \`\`\`
-npm install @radix-ui/react-* lucide-react sonner recharts tailwind-merge clsx class-variance-authority @tanstack/react-query react-router-dom
-\`\`\`
-
-5. Commit and push your changes:
-
-\`\`\`
-git add .
-git commit -m "Add FileArchitect application"
-git push origin main
-\`\`\`
-
-6. Your project is now available at https://github.com/TheBacons/file-architect
-
-### Downloading From Your GitHub Repository
-1. To download from your GitHub repository in the future:
-
-\`\`\`
-git clone https://github.com/TheBacons/file-architect.git
-cd file-architect
+git pull origin main
 npm install
-npm run dev
 \`\`\`
-
-## How to Download Source Files
-
-There are several ways to get the source files from this app:
-
-### Method 1: Download through Lovable Interface
-1. In the Lovable interface, click on "Dev Mode" in the top left corner to see the code
-2. Click on each file in the file explorer
-3. Copy and paste the content into your local files with the same structure
-
-### Method 2: Export Files from Lovable
-1. Click on the project name in the top left corner
-2. Go to "Settings"
-3. Click on "Export project"
-4. Download the ZIP file and extract it
-5. Copy the contents into your local project
-
-### Method 3: Connect to GitHub
-1. Click on the GitHub icon in the top right corner of the Lovable interface
-2. Follow the instructions to connect your GitHub account
-3. Push the project to your GitHub repository
-4. Clone the repository to your local machine
 `;
 
     // Create a blob and download it
@@ -165,13 +111,13 @@ There are several ways to get the source files from this app:
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'github-setup-instructions.md';
+    a.download = 'github-clone-instructions.md';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toast.success("GitHub setup instructions downloaded successfully!");
+    toast.success("GitHub clone instructions downloaded successfully!");
   };
 
   const handleDownloadProjectFiles = () => {
@@ -304,8 +250,7 @@ To access these files:
           className="w-full gap-2"
         >
           <Github className="h-4 w-4 mr-1" />
-          <Download className="h-4 w-4" />
-          Download GitHub Setup Instructions
+          Clone From TheBacons GitHub
         </Button>
         
         <Button
