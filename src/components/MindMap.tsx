@@ -4,6 +4,7 @@ import * as d3 from "d3";
 import { Card } from "@/components/ui/card";
 import { DirectoryNode } from "@/types/filesystem";
 import { cn } from "@/lib/utils";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 interface MindMapProps {
   data: DirectoryNode | null;
@@ -49,11 +50,11 @@ const MindMap = ({ data }: MindMapProps) => {
     const hierarchy = d3.hierarchy(data);
     
     const treeLayout = d3.tree<DirectoryNode>()
-      .size([width - 200, height - 100]);
+      .size([height - 100, width - 300]); // Swap dimensions for horizontal tree
     
     const root = treeLayout(hierarchy);
 
-    // Create a group for the entire visualization
+    // Create a group for the entire visualization with zoom capability
     const g = svg.append("g")
       .attr("transform", `translate(100, 50)`);
 
@@ -67,14 +68,16 @@ const MindMap = ({ data }: MindMapProps) => {
         .y(d => d.x))
       .attr("fill", "none")
       .attr("stroke", "#6366f1")
-      .attr("opacity", 0.5);
+      .attr("stroke-width", 1.5)
+      .attr("opacity", 0.6);
 
-    // Add nodes
+    // Add node groups with fixed positions
     const node = g.selectAll(".node")
       .data(root.descendants())
       .join("g")
       .attr("class", "node")
-      .attr("transform", d => `translate(${d.y},${d.x})`);
+      .attr("transform", d => `translate(${d.y},${d.x})`)
+      .attr("data-path", d => d.data.path);
 
     // Add node circles with different colors based on node type
     node.append("circle")
@@ -87,16 +90,32 @@ const MindMap = ({ data }: MindMapProps) => {
       .attr("stroke", "#1e293b")
       .attr("stroke-width", 1.5);
 
-    // Add node labels
+    // Truncate text if too long (to prevent overlap)
+    const truncateText = (text: string, maxLength = 20) => {
+      return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+    };
+
+    // Add node labels with smaller font size and truncation
     node.append("text")
       .attr("dy", "0.31em")
       .attr("x", d => d.children ? -10 : 10)
       .attr("text-anchor", d => d.children ? "end" : "start")
-      .text(d => d.data.name)
+      .attr("font-size", "10px") // Smaller font size
+      .attr("pointer-events", "none") // Prevent the text from capturing mouse events
+      .text(d => truncateText(d.data.name))
       .attr("fill", "currentColor")
-      .attr("font-size", "12px");
+      .attr("class", "node-text");
 
-    // Add zoom capabilities
+    // Add invisible rectangle for better hover detection
+    node.append("rect")
+      .attr("width", 10)
+      .attr("height", 10)
+      .attr("x", -5)
+      .attr("y", -5)
+      .attr("fill", "transparent")
+      .attr("class", "hover-target");
+
+    // Add zoom capabilities with smoother zooming
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 3])
       .on("zoom", (event) => {
@@ -104,8 +123,22 @@ const MindMap = ({ data }: MindMapProps) => {
       });
 
     svg.call(zoom as any);
+    
+    // Add tooltips for full file names
+    node.append("title")
+      .text(d => `${d.data.name}${d.data.size ? ` (${formatBytes(d.data.size)})` : ''}`);
 
   }, [data, dimensions]);
+  
+  // Helper function to format bytes
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  };
 
   if (!data) {
     return (
@@ -135,6 +168,9 @@ const MindMap = ({ data }: MindMapProps) => {
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
           <span>Duplicate</span>
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="italic text-muted-foreground text-[10px]">Hover over nodes to see full names</span>
         </div>
       </div>
     </div>
