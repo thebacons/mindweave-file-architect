@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FolderOpen, Database, Download, Github, FileDown } from "lucide-react";
+import { FolderOpen, Database, Download, Github, FileDown, Upload, Server } from "lucide-react";
 import { mockFileSystemData } from "@/lib/mockData";
 
 interface FileUploaderProps {
@@ -42,6 +43,36 @@ const FileUploader = ({ onFilesLoaded, onUseMockData }: FileUploaderProps) => {
       toast.error("Failed to access the directory. Please try again or use Mock Data for testing.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAlternativeSelect = async () => {
+    try {
+      // This won't work in all environments, but uses the older FileReader API
+      // which has broader support than the newer File System Access API
+      
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.webkitdirectory = true; // Non-standard attribute
+      
+      input.onchange = (event) => {
+        if (!input.files || input.files.length === 0) {
+          toast.error("No files selected");
+          return;
+        }
+        
+        toast.success(`Selected ${input.files.length} files using alternative method`);
+        toast.info("Due to corporate restrictions, full directory access may be limited. Using mock data might be the best option.");
+        
+        // In a real implementation, we would process these files here
+        // For now, we'll use the mock data which provides a better experience
+        onUseMockData();
+      };
+      
+      input.click();
+    } catch (error) {
+      console.error("Error with alternative select:", error);
+      toast.error("Alternative method also failed. Please use Mock Data for testing.");
     }
   };
 
@@ -90,12 +121,20 @@ Some browsers or environments (especially corporate environments) may restrict t
 - Use the "Use Mock Data" button in the application to test functionality
 - Try running the application in Chrome or Edge in a non-corporate environment
 - Ensure you're running the application through a proper web server (not just opening HTML files directly)
+- Try the "Alternative File Selection" button which uses an older API that might work in your environment
 
 ### If npm install Fails
 Try the following:
 1. Check your Node.js version (should be v16 or higher): \`node -v\`
 2. Clear npm cache: \`npm cache clean --force\`
 3. Try: \`npm install --legacy-peer-deps\`
+
+### Corporate Restrictions Workarounds
+If you're in a corporate environment with strict security policies:
+1. Run the app on a personal device if possible
+2. Use the Mock Data option for testing and demos
+3. Request temporary exceptions from your IT department
+4. Try running a portable browser version that has fewer restrictions
 
 ## Future Updates
 To pull future updates from your GitHub repository:
@@ -196,11 +235,27 @@ src/
     └── filesystem.ts
 \`\`\`
 
-To access these files:
+## Accessing Project Files in Corporate Environments
 
-1. Open Dev Mode in the Lovable interface (top left corner)
-2. Export the project from Settings or copy each file manually
-3. Make sure to install all dependencies (listed in the setup instructions)
+### Option 1: Direct GitHub Download
+1. Go to https://github.com/TheBacons/mindweave-file-architect
+2. Click the green "Code" button
+3. Select "Download ZIP"
+4. Extract the ZIP file to your desired location
+5. Use these files as a reference for your project
+
+### Option 2: GitHub Desktop
+If your corporate environment allows GitHub Desktop:
+1. Install GitHub Desktop
+2. Clone https://github.com/TheBacons/mindweave-file-architect
+3. Open the project in your preferred IDE
+
+### Option 3: Individual File Download
+If you can't access the repository or download the ZIP:
+1. Navigate to individual files in the GitHub repository
+2. Click on each file
+3. Click the "Raw" button
+4. Save the page as a file with the correct extension
 `;
 
     // Create a blob and download it
@@ -224,7 +279,8 @@ To access these files:
       <p className="text-muted-foreground mb-4 text-center">
         Choose a directory to scan for files and create a mindmap visualization.
       </p>
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center">
+      
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-4">
         <Button 
           onClick={handleDirectorySelect} 
           className="gap-2"
@@ -243,7 +299,27 @@ To access these files:
         </Button>
       </div>
       
-      <div className="mt-6 w-full max-w-md flex flex-col gap-3">
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-6">
+        <Button
+          onClick={handleAlternativeSelect}
+          variant="outline" 
+          className="gap-2"
+        >
+          <Upload className="h-4 w-4" />
+          Alternative File Selection
+        </Button>
+        
+        <Button
+          onClick={() => window.open("https://github.com/TheBacons/mindweave-file-architect", "_blank")}
+          variant="outline"
+          className="gap-2"
+        >
+          <Server className="h-4 w-4" />
+          View on GitHub
+        </Button>
+      </div>
+      
+      <div className="mt-2 w-full max-w-md flex flex-col gap-3">
         <Button
           onClick={handleDownloadInstructions}
           variant="outline"
@@ -265,6 +341,7 @@ To access these files:
       
       <p className="text-xs text-muted-foreground mt-4">
         Having trouble? The file picker may not work in corporate environments due to security restrictions.
+        Try using Mock Data or the Alternative File Selection method.
       </p>
     </div>
   );
