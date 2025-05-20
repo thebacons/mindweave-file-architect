@@ -29,6 +29,10 @@ const Index = () => {
     }
   };
 
+  const handleUseFilesArray = (result: AnalysisResult) => {
+    setAnalysisResult(result);
+  };
+
   const handleUseMockData = () => {
     setIsLoading(true);
     // Simulate a delay for the loading experience
@@ -64,7 +68,8 @@ const Index = () => {
           <div className="max-w-xl mx-auto mt-10">
             <FileUploader 
               onFilesLoaded={handleFilesLoaded}
-              onUseMockData={handleUseMockData} 
+              onUseMockData={handleUseMockData}
+              onUseFilesArray={handleUseFilesArray}
             />
           </div>
         ) : (

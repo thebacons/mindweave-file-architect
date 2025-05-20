@@ -1,4 +1,3 @@
-
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { AnalysisResult, DirectoryNode, DuplicateGroup, FileStats, Recommendation } from "@/types/filesystem";
@@ -182,6 +181,128 @@ export async function scanFileSystem(directoryEntry: FileSystemDirectoryEntry): 
     duplicateFiles: duplicates.reduce((acc, group) => acc + group.paths.length, 0),
     fileTypes,
     avgDepth,
+    maxDepth
+  };
+  
+  const recommendations = generateFileRecommendations({ 
+    rootNode, 
+    stats, 
+    duplicates,
+    recommendations: [] 
+  });
+  
+  return {
+    rootNode,
+    stats,
+    duplicates,
+    recommendations
+  };
+}
+
+// New function for corporate environment file scanning
+export async function scanFilesViaInput(files: FileList): Promise<AnalysisResult> {
+  const fileHashes = new Map<string, DuplicateGroup>();
+  const fileTypes = new Set<string>();
+  let totalFiles = 0;
+  let totalDirs = 0;
+  let totalSize = 0;
+  let maxDepth = 0;
+  
+  // Create a mapping of paths to organize files into a directory structure
+  const pathMap = new Map<string, DirectoryNode>();
+  const rootNode: DirectoryNode = {
+    name: "root",
+    path: "",
+    isDirectory: true,
+    children: []
+  };
+  pathMap.set("", rootNode);
+  
+  // Process each file and build directory structure
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const fullPath = file.webkitRelativePath;
+    const pathParts = fullPath.split('/');
+    const fileName = pathParts.pop() || "";
+    
+    // Process file info
+    const extension = getFileExtension(fileName);
+    fileTypes.add(extension);
+    totalFiles++;
+    totalSize += file.size;
+    
+    // Create directory nodes for path
+    let currentPath = "";
+    for (let j = 0; j < pathParts.length; j++) {
+      const part = pathParts[j];
+      const parentPath = currentPath;
+      currentPath = currentPath ? `${currentPath}/${part}` : part;
+      
+      if (!pathMap.has(currentPath)) {
+        const dirNode: DirectoryNode = {
+          name: part,
+          path: currentPath,
+          isDirectory: true,
+          children: []
+        };
+        pathMap.set(currentPath, dirNode);
+        
+        // Add to parent
+        const parent = pathMap.get(parentPath);
+        if (parent && parent.children) {
+          parent.children.push(dirNode);
+          totalDirs++;
+          // Update max depth
+          maxDepth = Math.max(maxDepth, j + 1);
+        }
+      }
+    }
+    
+    // Add file node
+    const parentPath = pathParts.join('/');
+    const parent = pathMap.get(parentPath);
+    if (parent && parent.children) {
+      const hash = await hashFile(file);
+      const fileNode: DirectoryNode = {
+        name: fileName,
+        path: fullPath,
+        isDirectory: false,
+        size: file.size,
+        type: extension,
+        hash
+      };
+      
+      // Check for duplicates
+      if (hash) {
+        if (fileHashes.has(hash)) {
+          const group = fileHashes.get(hash)!;
+          group.paths.push(fileNode.path);
+          fileNode.isDuplicate = true;
+        } else {
+          fileHashes.set(hash, {
+            hash,
+            fileName: file.name,
+            size: file.size,
+            paths: [fileNode.path]
+          });
+        }
+      }
+      
+      parent.children.push(fileNode);
+    }
+  }
+  
+  // Calculate stats
+  const duplicates = Array.from(fileHashes.values())
+    .filter(group => group.paths.length > 1);
+  
+  const stats: FileStats = {
+    totalSize,
+    totalFiles,
+    totalDirs,
+    duplicateFiles: duplicates.reduce((acc, group) => acc + group.paths.length, 0),
+    fileTypes,
+    avgDepth: totalDirs > 0 ? maxDepth / totalDirs : 0,
     maxDepth
   };
   

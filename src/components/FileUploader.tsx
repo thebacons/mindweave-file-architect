@@ -2,15 +2,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FolderOpen, Database, Download, Github, FileDown, Upload, Server } from "lucide-react";
+import { FolderOpen, Database, Download, Github, FileDown, Upload, Server, File } from "lucide-react";
 import { mockFileSystemData } from "@/lib/mockData";
+import { scanFilesViaInput } from "@/lib/utils";
 
 interface FileUploaderProps {
   onFilesLoaded: (files: FileSystemDirectoryEntry) => void;
   onUseMockData: () => void;
+  onUseFilesArray?: (filesAnalysis: any) => void;
 }
 
-const FileUploader = ({ onFilesLoaded, onUseMockData }: FileUploaderProps) => {
+const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUploaderProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDirectorySelect = async () => {
@@ -48,31 +50,181 @@ const FileUploader = ({ onFilesLoaded, onUseMockData }: FileUploaderProps) => {
 
   const handleAlternativeSelect = async () => {
     try {
-      // This won't work in all environments, but uses the older FileReader API
-      // which has broader support than the newer File System Access API
+      setIsLoading(true);
+      toast.info("Attempting alternative file selection method...");
       
       const input = document.createElement('input');
       input.type = 'file';
       input.webkitdirectory = true; // Non-standard attribute
       
-      input.onchange = (event) => {
+      input.onchange = async (event) => {
         if (!input.files || input.files.length === 0) {
           toast.error("No files selected");
+          setIsLoading(false);
           return;
         }
         
-        toast.success(`Selected ${input.files.length} files using alternative method`);
-        toast.info("Due to corporate restrictions, full directory access may be limited. Using mock data might be the best option.");
-        
-        // In a real implementation, we would process these files here
-        // For now, we'll use the mock data which provides a better experience
-        onUseMockData();
+        try {
+          toast.success(`Selected ${input.files.length} files`);
+          
+          if (onUseFilesArray) {
+            // Use our new function to process files
+            const result = await scanFilesViaInput(input.files);
+            onUseFilesArray(result);
+            toast.success("Files analyzed successfully!");
+          } else {
+            toast.error("File array handler not implemented");
+            onUseMockData(); // Fallback to mock data
+          }
+        } catch (error) {
+          console.error("Error processing files:", error);
+          toast.error("Error processing files. Using mock data instead.");
+          onUseMockData();
+        } finally {
+          setIsLoading(false);
+        }
       };
       
       input.click();
     } catch (error) {
       console.error("Error with alternative select:", error);
-      toast.error("Alternative method also failed. Please use Mock Data for testing.");
+      toast.error("Alternative method failed. Please try another approach.");
+      setIsLoading(false);
+      onUseMockData();
+    }
+  };
+
+  const handleBatchFileUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    
+    input.onchange = async (event) => {
+      if (!input.files || input.files.length === 0) {
+        toast.error("No files selected");
+        return;
+      }
+      
+      toast.success(`Selected ${input.files.length} individual files`);
+      toast.info("Processing individual files (limited directory structure)...");
+      
+      // Create a simplified analysis for individual files
+      if (onUseFilesArray) {
+        try {
+          setIsLoading(true);
+          // Group files by directory based on name patterns
+          const result = await processIndividualFiles(input.files);
+          onUseFilesArray(result);
+        } catch (error) {
+          console.error("Error processing individual files:", error);
+          toast.error("Error processing files. Using mock data instead.");
+          onUseMockData();
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        toast.error("File array handler not implemented");
+        onUseMockData();
+      }
+    };
+    
+    input.click();
+  };
+  
+  // Process individual files without directory structure
+  const processIndividualFiles = async (files: FileList) => {
+    const rootNode: any = {
+      name: "Uploaded Files",
+      path: "",
+      isDirectory: true,
+      children: []
+    };
+    
+    // Create basic file type folders
+    const imageFolder = { name: "Images", path: "/Images", isDirectory: true, children: [] };
+    const documentFolder = { name: "Documents", path: "/Documents", isDirectory: true, children: [] };
+    const otherFolder = { name: "Other", path: "/Other", isDirectory: true, children: [] };
+    
+    rootNode.children.push(imageFolder, documentFolder, otherFolder);
+    
+    let totalSize = 0;
+    const fileTypes = new Set<string>();
+    const fileHashes = new Map();
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const extension = file.name.split('.').pop()?.toLowerCase() || '';
+      fileTypes.add(extension);
+      totalSize += file.size;
+      
+      const hash = await hashFile(file);
+      const fileNode = {
+        name: file.name,
+        path: "/" + (file.name),
+        isDirectory: false,
+        size: file.size,
+        type: extension,
+        hash
+      };
+      
+      // Check for duplicates and add to appropriate folder
+      if (hash) {
+        if (fileHashes.has(hash)) {
+          const group = fileHashes.get(hash);
+          group.paths.push(fileNode.path);
+          fileNode.isDuplicate = true;
+        } else {
+          fileHashes.set(hash, {
+            hash,
+            fileName: file.name,
+            size: file.size,
+            paths: [fileNode.path]
+          });
+        }
+      }
+      
+      // Add to appropriate folder based on extension
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) {
+        imageFolder.children.push(fileNode);
+      } else if (['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension)) {
+        documentFolder.children.push(fileNode);
+      } else {
+        otherFolder.children.push(fileNode);
+      }
+    }
+    
+    // Simplified stats
+    const duplicates = Array.from(fileHashes.values())
+      .filter(group => group.paths.length > 1);
+    
+    const stats = {
+      totalSize,
+      totalFiles: files.length,
+      totalDirs: 3, // Our basic folders
+      duplicateFiles: duplicates.reduce((acc, group) => acc + group.paths.length - 1, 0),
+      fileTypes,
+      avgDepth: 1,
+      maxDepth: 1
+    };
+    
+    const result = {
+      rootNode,
+      stats,
+      duplicates,
+      recommendations: []
+    };
+    
+    return result;
+  };
+  
+  // Utility function for file hashing (simplified for individual files)
+  const hashFile = async (file: File): Promise<string> => {
+    try {
+      // Just hash the file name and size for quicker processing
+      return `${file.name}-${file.size}-${file.lastModified}`;
+    } catch (error) {
+      console.error("Error hashing file:", error);
+      return "";
     }
   };
 
@@ -299,16 +451,27 @@ If you can't access the repository or download the ZIP:
         </Button>
       </div>
       
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-6">
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-4">
         <Button
           onClick={handleAlternativeSelect}
           variant="outline" 
           className="gap-2"
         >
           <Upload className="h-4 w-4" />
-          Alternative File Selection
+          Alternative Directory Selection
         </Button>
         
+        <Button
+          onClick={handleBatchFileUpload}
+          variant="outline"
+          className="gap-2"
+        >
+          <File className="h-4 w-4" />
+          Upload Individual Files
+        </Button>
+      </div>
+      
+      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-6">
         <Button
           onClick={() => window.open("https://github.com/TheBacons/mindweave-file-architect", "_blank")}
           variant="outline"
@@ -340,8 +503,8 @@ If you can't access the repository or download the ZIP:
       </div>
       
       <p className="text-xs text-muted-foreground mt-4">
-        Having trouble? The file picker may not work in corporate environments due to security restrictions.
-        Try using Mock Data or the Alternative File Selection method.
+        Having trouble? Try the "Upload Individual Files" option or "Alternative Directory Selection" which may work better in corporate environments.
+        If all else fails, use Mock Data for testing the application features.
       </p>
     </div>
   );
