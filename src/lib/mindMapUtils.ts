@@ -49,6 +49,95 @@ export const truncateText = (text: string, maxLength = 35) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 };
 
+// Export mind map as SVG
+export const exportMindMapAsSVG = (
+  svgRef: React.RefObject<SVGSVGElement>,
+  filename: string = "mindmap"
+) => {
+  if (!svgRef.current) return;
+  
+  // Clone the SVG to avoid modifying the original
+  const clone = svgRef.current.cloneNode(true) as SVGSVGElement;
+  
+  // Set white background for export
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect.setAttribute("width", "100%");
+  rect.setAttribute("height", "100%");
+  rect.setAttribute("fill", "white");
+  clone.insertBefore(rect, clone.firstChild);
+  
+  // Get serialized SVG
+  const svgData = new XMLSerializer().serializeToString(clone);
+  const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+  
+  // Create download link
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${filename}.svg`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+// Export mind map as JPG
+export const exportMindMapAsJPG = (
+  svgRef: React.RefObject<SVGSVGElement>,
+  filename: string = "mindmap"
+) => {
+  if (!svgRef.current) return;
+  
+  // Clone the SVG to avoid modifying the original
+  const clone = svgRef.current.cloneNode(true) as SVGSVGElement;
+  
+  // Set white background for export
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect.setAttribute("width", "100%");
+  rect.setAttribute("height", "100%");
+  rect.setAttribute("fill", "white");
+  clone.insertBefore(rect, clone.firstChild);
+  
+  // Get serialized SVG
+  const svgData = new XMLSerializer().serializeToString(clone);
+  const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+  
+  // Create an image and set the SVG as its source
+  const img = new Image();
+  img.onload = () => {
+    // Create a canvas with the same dimensions as the SVG
+    const canvas = document.createElement("canvas");
+    const width = svgRef.current?.width.baseVal.value || 800;
+    const height = svgRef.current?.height.baseVal.value || 600;
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Draw the image on the canvas
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert canvas to data URL and download
+      const jpgURL = canvas.toDataURL("image/jpeg", 0.9);
+      const link = document.createElement("a");
+      link.href = jpgURL;
+      link.download = `${filename}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+  };
+  
+  img.src = url;
+};
+
 // Create D3 visualization for the mind map
 export const createMindMapVisualization = (
   svgRef: React.RefObject<SVGSVGElement>,
@@ -68,14 +157,22 @@ export const createMindMapVisualization = (
   // Create a hierarchical layout
   const hierarchy = d3.hierarchy(data);
   
+  // Increase vertical spacing between nodes for better readability
   const treeLayout = d3.tree<DirectoryNode>()
-    .size([height - 100, width - 350]); // More horizontal space for node labels
+    .size([height - 150, width - 400]) // Increased spacing horizontally and vertically
+    .separation((a, b) => {
+      // Custom separation function to add more space between nodes
+      // Base separation is 2 units, but we add more for nodes with longer names
+      const baseSpacing = 2;
+      const additionalSpacing = Math.max(0, (a.data.name.length + b.data.name.length) / 60);
+      return baseSpacing + additionalSpacing;
+    }); 
   
   const root = treeLayout(hierarchy);
 
   // Create a group for the entire visualization with zoom capability
   const g = svg.append("g")
-    .attr("transform", `translate(200, 50)`); // Increased left margin for longer filenames
+    .attr("transform", `translate(220, 75)`); // Increased margins for better spacing
 
   // Add links between nodes
   g.selectAll(".link")
@@ -98,13 +195,13 @@ export const createMindMapVisualization = (
     .attr("transform", d => `translate(${d.y},${d.x})`)
     .attr("data-path", d => d.data.path);
 
-  // Add background rectangles for better hover behavior
+  // Add background rectangles for better hover behavior with increased size
   nodeGroups.append("rect")
     .attr("class", "node-bg")
-    .attr("x", d => d.children ? -150 : 10) // Position based on whether node has children
-    .attr("y", -15)
-    .attr("width", 140) // Fixed width for stability
-    .attr("height", 30)
+    .attr("x", d => d.children ? -160 : 10) // Position based on whether node has children
+    .attr("y", -20) // Increased height
+    .attr("width", 150) // Increased width for longer filenames
+    .attr("height", 40) // Increased height for better click area
     .attr("fill", "transparent") // Transparent by default
     .attr("rx", 4); // Rounded corners
 
@@ -119,22 +216,23 @@ export const createMindMapVisualization = (
     .attr("stroke", "#1e293b")
     .attr("stroke-width", 1.5);
 
-  // Add node labels with more stable positioning
+  // Add node labels with more stable positioning and improved spacing
   const labels = nodeGroups.append("text")
     .attr("dy", "0.31em")
     .attr("x", d => d.children ? -12 : 12)
     .attr("text-anchor", d => d.children ? "end" : "start")
-    .attr("font-size", "11px") // Slightly larger font
+    .attr("font-size", "12px") // Slightly larger font
     .attr("pointer-events", "none") // Prevent the text from capturing mouse events
-    .text(d => truncateText(d.data.name, 35))
+    .text(d => truncateText(d.data.name, 30)) // Shorter text to prevent overlap
     .attr("fill", "currentColor")
-    .attr("class", "node-text");
+    .attr("class", "node-text")
+    .attr("dominant-baseline", "middle"); // Better vertical alignment
 
   // Add stable text backgrounds that don't change on hover
   labels.each(function(d) {
     // Add a background for better text visibility
     const bbox = this.getBBox();
-    const padding = 3;
+    const padding = 4; // Increased padding
     d3.select(this.parentNode)
       .insert("rect", "text")
       .attr("class", "text-bg")
@@ -144,7 +242,7 @@ export const createMindMapVisualization = (
       .attr("height", bbox.height + (padding * 2))
       .attr("fill", "rgba(30, 41, 59, 0.7)")
       .attr("rx", 3)
-      .attr("opacity", 0.6);
+      .attr("opacity", 0.7);
   });
 
   // Add hover effects without causing text jumps
@@ -199,6 +297,6 @@ export const createMindMapVisualization = (
   svg.call(zoom as any);
   
   // Initial zoom to fit more content
-  svg.call(zoom.transform as any, d3.zoomIdentity.translate(200, 50).scale(0.8));
+  svg.call(zoom.transform as any, d3.zoomIdentity.translate(220, 75).scale(0.7)); // More zoomed out initially
 };
 
