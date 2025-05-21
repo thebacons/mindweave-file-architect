@@ -1,9 +1,18 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { FolderOpen, Database, Github, FileDown, Server } from "lucide-react";
+import { FolderOpen, Database, FileDown, ExternalLink } from "lucide-react";
 import { scanFilesViaInput } from "@/lib/utils";
-import { DirectoryNode } from "@/types/filesystem";
+import { motion } from "framer-motion";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 interface FileUploaderProps {
   onFilesLoaded: (files: FileSystemDirectoryEntry) => void;
@@ -75,269 +84,124 @@ const FileUploader = ({ onFilesLoaded, onUseMockData, onUseFilesArray }: FileUpl
     window.open("https://stackblitz.com/github/TheBacons/mindweave-file-architect", "_blank");
   };
 
-  const handleDownloadInstructions = () => {
-    const instructions = `
-# Cloning and Running FileArchitect From Your GitHub Account (TheBacons)
-
-## Step 1: Clone the Repository
-1. Open your terminal or command prompt
-2. Navigate to the directory where you want to clone the project
-3. Run the following command:
-
-\`\`\`
-git clone https://github.com/TheBacons/mindweave-file-architect.git
-cd mindweave-file-architect
-\`\`\`
-
-## Step 2: Install Dependencies
-Once you have cloned the repository, install all the necessary dependencies:
-
-\`\`\`
-npm install
-\`\`\`
-
-## Step 3: Run the Application
-After installing the dependencies, start the development server:
-
-\`\`\`
-npm run dev
-\`\`\`
-
-Then open your browser and navigate to the URL displayed in your terminal (typically http://localhost:5173 or http://localhost:8080).
-
-## Troubleshooting
-
-### If You See "Repository Not Found" Error
-Make sure you're logged in to GitHub and have access to your repository.
-
-### If the File System API Doesn't Work
-Some browsers or environments (especially corporate environments) may restrict the File System Access API. In that case:
-- Use the "Use Mock Data" button in the application to test functionality
-- Try running the application in Chrome or Edge in a non-corporate environment
-- Ensure you're running the application through a proper web server (not just opening HTML files directly)
-- Try the "Alternative File Selection" button which uses an older API that might work in your environment
-
-### If npm install Fails
-Try the following:
-1. Check your Node.js version (should be v16 or higher): \`node -v\`
-2. Clear npm cache: \`npm cache clean --force\`
-3. Try: \`npm install --legacy-peer-deps\`
-
-### Corporate Restrictions Workarounds
-If you're in a corporate environment with strict security policies:
-1. Run the app on a personal device if possible
-2. Use the Mock Data option for testing and demos
-3. Request temporary exceptions from your IT department
-4. Try running a portable browser version that has fewer restrictions
-
-## Future Updates
-To pull future updates from your GitHub repository:
-
-\`\`\`
-git pull origin main
-npm install
-\`\`\`;
-`;
-
-    // Create a blob and download it
-    const blob = new Blob([instructions], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'github-clone-instructions.md';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast.success("GitHub clone instructions downloaded successfully!");
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
   };
-
-  const handleDownloadProjectFiles = () => {
-    const projectStructure = `
-# Project Structure
-
-This is the structure of the FileArchitect project. You'll need to create these files and folders in your local project.
-
-\`\`\`
-src/
-├── components/
-│   ├── DirectoryStats.tsx
-│   ├── DuplicatesTable.tsx
-│   ├── FileUploader.tsx
-│   ├── LoadingOverlay.tsx
-│   ├── MindMap.tsx
-│   ├── RecommendationCard.tsx
-│   └── ui/
-│       ├── accordion.tsx
-│       ├── alert-dialog.tsx
-│       ├── alert.tsx
-│       ├── aspect-ratio.tsx
-│       ├── avatar.tsx
-│       ├── badge.tsx
-│       ├── button.tsx
-│       ├── calendar.tsx
-│       ├── card.tsx
-│       ├── carousel.tsx
-│       ├── chart.tsx
-│       ├── checkbox.tsx
-│       ├── collapsible.tsx
-│       ├── command.tsx
-│       ├── context-menu.tsx
-│       ├── dialog.tsx
-│       ├── dropdown-menu.tsx
-│       ├── form.tsx
-│       ├── hover-card.tsx
-│       ├── input-otp.tsx
-│       ├── input.tsx
-│       ├── label.tsx
-│       ├── menubar.tsx
-│       ├── navigation-menu.tsx
-│       ├── pagination.tsx
-│       ├── popover.tsx
-│       ├── progress.tsx
-│       ├── radio-group.tsx
-│       ├── resizable.tsx
-│       ├── scroll-area.tsx
-│       ├── select.tsx
-│       ├── separator.tsx
-│       ├── sheet.tsx
-│       ├── sidebar.tsx
-│       ├── skeleton.tsx
-│       ├── slider.tsx
-│       ├── sonner.tsx
-│       ├── switch.tsx
-│       ├── table.tsx
-│       ├── tabs.tsx
-│       ├── textarea.tsx
-│       ├── toast.tsx
-│       ├── toaster.tsx
-│       ├── toggle-group.tsx
-│       ├── toggle.tsx
-│       ├── tooltip.tsx
-│       └── use-toast.ts
-├── hooks/
-│   ├── use-mobile.tsx
-│   └── use-toast.ts
-├── lib/
-│   ├── mockData.ts
-│   └── utils.ts
-├── pages/
-│   ├── Index.tsx
-│   └── NotFound.tsx
-└── types/
-    └── filesystem.ts
-\`\`\`
-
-## Accessing Project Files in Corporate Environments
-
-### Option 1: Direct GitHub Download
-1. Go to https://github.com/TheBacons/mindweave-file-architect
-2. Click the green "Code" button
-3. Select "Download ZIP"
-4. Extract the ZIP file to your desired location
-5. Use these files as a reference for your project
-
-### Option 2: GitHub Desktop
-If your corporate environment allows GitHub Desktop:
-1. Install GitHub Desktop
-2. Clone https://github.com/TheBacons/mindweave-file-architect
-3. Open the project in your preferred IDE
-
-### Option 3: Individual File Download
-If you can't access the repository or download the ZIP:
-1. Navigate to individual files in the GitHub repository
-2. Click on each file
-3. Click the "Raw" button
-4. Save the page as a file with the correct extension
-`;
-
-    // Create a blob and download it
-    const blob = new Blob([projectStructure], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'project-structure.md';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast.success("Project structure file downloaded successfully!");
+  
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-secondary rounded-lg">
-      <FolderOpen className="h-12 w-12 text-primary mb-4" />
-      <h2 className="text-xl font-semibold mb-2">Select a Directory to Analyze</h2>
-      <p className="text-muted-foreground mb-4 text-center">
-        Choose a directory to scan for files and create a mindmap visualization.
-      </p>
+    <motion.div 
+      className="flex flex-col items-center justify-center p-10 border border-border/30 rounded-xl bg-card/30 backdrop-blur-sm shadow-sm"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div variants={itemVariants}>
+        <FolderOpen className="h-16 w-16 text-primary mb-6 opacity-90" />
+      </motion.div>
       
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-4">
+      <motion.h2 
+        className="text-2xl font-medium mb-3" 
+        variants={itemVariants}
+      >
+        Analyze Your File System
+      </motion.h2>
+      
+      <motion.p 
+        className="text-muted-foreground mb-8 text-center max-w-md"
+        variants={itemVariants}
+      >
+        Choose a directory to scan and visualize your file structure as an interactive mindmap
+      </motion.p>
+      
+      <motion.div 
+        className="flex flex-col sm:flex-row gap-4 w-full justify-center mb-4"
+        variants={itemVariants}
+      >
         <Button 
           onClick={handleDirectorySelect} 
-          className="gap-2"
+          size="lg"
+          className="gap-2 px-6 shadow-sm"
           disabled={isLoading}
         >
-          <FolderOpen className="h-4 w-4" />
+          <FolderOpen className="h-5 w-5" />
           {isLoading ? "Scanning..." : "Select Directory"}
         </Button>
         
         <Button
           onClick={handleUseMockData}
           variant="secondary"
-          className="gap-2"
+          size="lg"
+          className="gap-2 px-6"
         >
-          <Database className="h-4 w-4" />
+          <Database className="h-5 w-5" />
           Use Mock Data
         </Button>
-      </div>
+      </motion.div>
       
-      <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center mb-6">
-        <Button
-          onClick={openStackblitz}
-          variant="outline"
-          className="gap-2"
-        >
-          <Server className="h-4 w-4" />
-          Open in Stackblitz
-        </Button>
-        
-        <Button
-          onClick={() => window.open("https://github.com/TheBacons/mindweave-file-architect", "_blank")}
-          variant="outline"
-          className="gap-2"
-        >
-          <Github className="h-4 w-4" />
-          View on GitHub
-        </Button>
-      </div>
+      <motion.div 
+        className="mt-8 w-full max-w-md flex flex-col gap-3"
+        variants={itemVariants}
+        transition={{ delay: 0.4 }}
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+            >
+              <FileDown className="h-4 w-4" />
+              Additional Resources
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="w-52">
+            <DropdownMenuLabel>Resources</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={openStackblitz}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                <span>Open in Stackblitz</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => window.open("https://github.com/TheBacons/mindweave-file-architect", "_blank")}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 mr-2 fill-current">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <span>GitHub Repository</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </motion.div>
       
-      <div className="mt-2 w-full max-w-md flex flex-col gap-3">
-        <Button
-          onClick={handleDownloadInstructions}
-          variant="outline"
-          className="w-full gap-2"
-        >
-          <Github className="h-4 w-4 mr-1" />
-          Clone From TheBacons GitHub
-        </Button>
-        
-        <Button
-          onClick={handleDownloadProjectFiles}
-          variant="outline"
-          className="w-full gap-2"
-        >
-          <FileDown className="h-4 w-4" />
-          Download Project Structure
-        </Button>
-      </div>
-      
-      <p className="text-xs text-muted-foreground mt-4">
-        Having trouble? Use Mock Data for testing the application features or try opening the project directly in Stackblitz.
-      </p>
-    </div>
+      <motion.p 
+        className="text-xs text-muted-foreground mt-8 text-center opacity-70"
+        variants={itemVariants}
+        transition={{ delay: 0.5 }}
+      >
+        Your files are processed locally. No data is sent to any server.
+      </motion.p>
+    </motion.div>
   );
 };
 
