@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from "react";
+import * as d3 from "d3"; // Add this import to fix the d3 reference errors
 import { DirectoryNode } from "@/types/filesystem";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
