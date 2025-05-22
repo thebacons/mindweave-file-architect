@@ -7,7 +7,7 @@ import MindMapLegend from "./mindmap/MindMapLegend";
 import MindMapEmpty from "./mindmap/MindMapEmpty";
 import { createMindMapVisualization, exportMindMapAsSVG, exportMindMapAsJPG } from "@/lib/mindMapUtils";
 import { Button } from "@/components/ui/button";
-import { Download, FileDown } from "lucide-react";
+import { Download, FileDown, ZoomIn, ZoomOut, Minimize } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -25,34 +25,51 @@ interface MindMapProps {
 
 const MindMap = ({ data }: MindMapProps) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [zoomLevel, setZoomLevel] = useState(1);
   
+  // Enhanced resize handler for more responsive dimensions
   useEffect(() => {
-    if (!data || !svgRef.current) return;
+    if (!svgRef.current || !containerRef.current) return;
 
     const handleResize = () => {
-      const container = svgRef.current?.parentElement;
-      if (container) {
+      if (containerRef.current) {
+        // Get the actual container size
+        const container = containerRef.current;
+        const { width, height } = container.getBoundingClientRect();
+        
+        // Set minimum dimensions to ensure good visualization
         setDimensions({
-          width: container.clientWidth,
-          height: container.clientHeight,
+          width: Math.max(800, width - 20), // Slight padding
+          height: Math.max(500, height - 20), // Slight padding
         });
       }
     };
 
+    // Initial sizing
     handleResize();
+    
+    // Add resize listener
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(containerRef.current);
     window.addEventListener("resize", handleResize);
 
     return () => {
+      if (containerRef.current) {
+        resizeObserver.unobserve(containerRef.current);
+      }
       window.removeEventListener("resize", handleResize);
     };
   }, []);
 
+  // Recreate visualization when data or dimensions change
   useEffect(() => {
     if (!data || !svgRef.current) return;
     createMindMapVisualization(svgRef, data, dimensions);
   }, [data, dimensions]);
   
+  // SVG Export handler
   const handleExportSVG = () => {
     if (!svgRef.current || !data) return;
     
@@ -66,6 +83,7 @@ const MindMap = ({ data }: MindMapProps) => {
     }
   };
 
+  // JPG Export handler
   const handleExportJPG = () => {
     if (!svgRef.current || !data) return;
     
@@ -79,6 +97,7 @@ const MindMap = ({ data }: MindMapProps) => {
     }
   };
   
+  // FreeMind export handler
   const handleExportAsFreemind = () => {
     if (!data) return;
     
@@ -99,6 +118,31 @@ const MindMap = ({ data }: MindMapProps) => {
       console.error("Error exporting as FreeMind:", error);
       toast.error("Failed to export as FreeMind format");
     }
+  };
+  
+  // Custom zoom controls
+  const handleZoomIn = () => {
+    if (!svgRef.current) return;
+    const svg = d3.select(svgRef.current);
+    const zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([0.1, 3]);
+    svg.transition().call(zoom.scaleBy as any, 1.2);
+    setZoomLevel(prev => Math.min(3, prev * 1.2));
+  };
+  
+  const handleZoomOut = () => {
+    if (!svgRef.current) return;
+    const svg = d3.select(svgRef.current);
+    const zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([0.1, 3]);
+    svg.transition().call(zoom.scaleBy as any, 0.8);
+    setZoomLevel(prev => Math.max(0.1, prev * 0.8));
+  };
+  
+  const handleResetZoom = () => {
+    if (!svgRef.current) return;
+    const svg = d3.select(svgRef.current);
+    const zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([0.1, 3]);
+    svg.transition().call(zoom.transform as any, d3.zoomIdentity.translate(250, 75).scale(0.6));
+    setZoomLevel(0.6);
   };
   
   // Simple function to convert data to FreeMind XML format
@@ -141,8 +185,38 @@ const MindMap = ({ data }: MindMapProps) => {
   }
 
   return (
-    <div className={cn("w-full h-full min-h-[500px] relative")}>
-      <div className="absolute top-2 right-2 z-10">
+    <div className={cn("w-full h-full min-h-[500px] relative")} ref={containerRef}>
+      <div className="absolute top-2 right-2 z-10 flex gap-2">
+        <div className="bg-background/80 backdrop-blur-sm border border-border/30 rounded-md p-1 flex gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleZoomIn}
+            className="h-8 w-8"
+            title="Zoom In"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleZoomOut}
+            className="h-8 w-8"
+            title="Zoom Out"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleResetZoom}
+            className="h-8 w-8"
+            title="Reset Zoom"
+          >
+            <Minimize className="h-4 w-4" />
+          </Button>
+        </div>
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">

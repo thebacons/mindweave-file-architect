@@ -1,4 +1,3 @@
-
 import * as d3 from "d3";
 import { DirectoryNode } from "@/types/filesystem";
 import { toast } from "sonner";
@@ -138,6 +137,31 @@ export const exportMindMapAsJPG = (
   img.src = url;
 };
 
+// Calculate optimal tree size based on node count
+const calculateOptimalTreeSize = (hierarchy: d3.HierarchyNode<DirectoryNode>) => {
+  // Count total nodes
+  const nodeCount = hierarchy.descendants().length;
+  
+  // Calculate tree depth
+  const depth = hierarchy.height;
+  
+  // Find max text length at each level
+  const maxLabelLength = hierarchy.descendants()
+    .reduce((max, node) => Math.max(max, node.data.name.length), 0);
+  
+  // Base size adjusted for node count
+  const baseHeight = Math.max(600, nodeCount * 15);
+  const baseWidth = Math.max(800, maxLabelLength * 10, nodeCount * 25);
+  
+  // Adjust for depth - deeper trees need more width
+  const widthMultiplier = Math.min(2.5, Math.max(1.5, depth / 4));
+  
+  return {
+    height: baseHeight,
+    width: baseWidth * widthMultiplier
+  };
+};
+
 // Create D3 visualization for the mind map
 export const createMindMapVisualization = (
   svgRef: React.RefObject<SVGSVGElement>,
@@ -157,22 +181,32 @@ export const createMindMapVisualization = (
   // Create a hierarchical layout
   const hierarchy = d3.hierarchy(data);
   
+  // Calculate optimal size based on data complexity
+  const optimalSize = calculateOptimalTreeSize(hierarchy);
+  
+  // Dynamic separation based on node count
+  const nodeSeparationFactor = Math.min(4, Math.max(2.5, hierarchy.descendants().length / 100 + 2));
+  
   // Increase vertical spacing between nodes for better readability
   const treeLayout = d3.tree<DirectoryNode>()
-    .size([height - 150, width - 400]) // Increased spacing horizontally and vertically
+    .size([Math.min(height - 100, optimalSize.height), Math.min(width - 300, optimalSize.width)])
     .separation((a, b) => {
-      // Custom separation function to add more space between nodes
-      // Base separation is 2 units, but we add more for nodes with longer names
-      const baseSpacing = 2;
-      const additionalSpacing = Math.max(0, (a.data.name.length + b.data.name.length) / 60);
-      return baseSpacing + additionalSpacing;
+      // Enhanced separation function
+      // Base separation is higher (3-4 units), plus we add more for nodes with longer names
+      // Also consider the depth of the nodes - deeper nodes might need more separation
+      const baseSpacing = nodeSeparationFactor;
+      const depthFactor = Math.max(1, (a.depth + b.depth) / 10);
+      const nameLengthFactor = Math.max(0, (a.data.name.length + b.data.name.length) / 40);
+      const siblingFactor = a.parent === b.parent ? 1 : 1.2;
+      
+      return (baseSpacing + nameLengthFactor + depthFactor) * siblingFactor;
     }); 
   
   const root = treeLayout(hierarchy);
 
   // Create a group for the entire visualization with zoom capability
   const g = svg.append("g")
-    .attr("transform", `translate(220, 75)`); // Increased margins for better spacing
+    .attr("transform", `translate(250, 75)`); // Increased left margin for more space
 
   // Add links between nodes
   g.selectAll(".link")
@@ -198,9 +232,13 @@ export const createMindMapVisualization = (
   // Add background rectangles for better hover behavior with increased size
   nodeGroups.append("rect")
     .attr("class", "node-bg")
-    .attr("x", d => d.children ? -160 : 10) // Position based on whether node has children
+    .attr("x", d => d.children ? -180 : 10) // More space for directory names
     .attr("y", -20) // Increased height
-    .attr("width", 150) // Increased width for longer filenames
+    .attr("width", d => {
+      // Dynamically size width based on text length
+      const nameLength = d.data.name.length;
+      return d.children ? Math.max(150, nameLength * 5) : Math.max(150, nameLength * 4);
+    }) // Dynamic width for longer filenames
     .attr("height", 40) // Increased height for better click area
     .attr("fill", "transparent") // Transparent by default
     .attr("rx", 4); // Rounded corners
@@ -216,14 +254,29 @@ export const createMindMapVisualization = (
     .attr("stroke", "#1e293b")
     .attr("stroke-width", 1.5);
 
+  // More aggressive truncation based on depth and node density
+  const calculateTruncateLength = (node: d3.HierarchyNode<DirectoryNode>) => {
+    // Deeper nodes get shorter names
+    const depthFactor = Math.max(10, 40 - node.depth * 5);
+    // Adjust based on number of siblings
+    const siblingCount = node.parent ? node.parent.children!.length : 1;
+    const siblingFactor = Math.max(15, 35 - siblingCount * 1.5);
+    
+    return Math.min(depthFactor, siblingFactor);
+  };
+
   // Add node labels with more stable positioning and improved spacing
   const labels = nodeGroups.append("text")
     .attr("dy", "0.31em")
-    .attr("x", d => d.children ? -12 : 12)
+    .attr("x", d => d.children ? -14 : 14) // Increased spacing from node circles
     .attr("text-anchor", d => d.children ? "end" : "start")
     .attr("font-size", "12px") // Slightly larger font
     .attr("pointer-events", "none") // Prevent the text from capturing mouse events
-    .text(d => truncateText(d.data.name, 30)) // Shorter text to prevent overlap
+    .text(d => {
+      // Dynamic truncation based on node density and depth
+      const maxLength = calculateTruncateLength(d);
+      return truncateText(d.data.name, maxLength);
+    })
     .attr("fill", "currentColor")
     .attr("class", "node-text")
     .attr("dominant-baseline", "middle"); // Better vertical alignment
@@ -296,7 +349,11 @@ export const createMindMapVisualization = (
 
   svg.call(zoom as any);
   
-  // Initial zoom to fit more content
-  svg.call(zoom.transform as any, d3.zoomIdentity.translate(220, 75).scale(0.7)); // More zoomed out initially
+  // Calculate initial zoom based on tree size and viewport
+  const autoScale = Math.min(0.9, Math.max(0.4, 800 / optimalSize.width));
+  
+  // Initial zoom to fit content better
+  svg.call(zoom.transform as any, d3.zoomIdentity
+    .translate(250, 75)
+    .scale(autoScale)); // Automatically calculate zoom level
 };
-
