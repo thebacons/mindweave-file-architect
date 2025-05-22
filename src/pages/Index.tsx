@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import FileUploader from "@/components/FileUploader";
 import MindMap from "@/components/MindMap";
@@ -267,7 +266,7 @@ src/
       
       <footer className="border-t border-border/20 py-3 bg-background/50 backdrop-blur-sm">
         <div className="container text-center text-xs text-muted-foreground">
-          <p>mindweave-file-architect © {new Date().getFullYear()}</p>
+          <p>mindweave-file-architect © TheBacons-AI {new Date().getFullYear()} - Developed by Colin Bacon</p>
         </div>
       </footer>
     </div>
