@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import FileUploader from "@/components/FileUploader";
 import MindMap from "@/components/MindMap";
@@ -6,7 +7,7 @@ import DuplicatesTable from "@/components/DuplicatesTable";
 import RecommendationCard from "@/components/RecommendationCard";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { AnalysisResult } from "@/types/filesystem";
-import { scanFileSystem } from "@/lib/utils";
+import { scanFileSystem, scanFilesViaInput } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FolderTree, FileSearch, ArrowLeft, ExternalLink, Menu } from "lucide-react";
@@ -22,40 +23,120 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
+import { useProgress } from "@/contexts/ProgressContext";
 
 const Index = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { updateProgress, resetProgress } = useProgress();
 
   const handleFilesLoaded = async (directoryEntry: FileSystemDirectoryEntry) => {
     setIsLoading(true);
+    resetProgress();
+    updateProgress({ isProcessing: true, stage: "scanning" });
+    
     try {
-      const result = await scanFileSystem(directoryEntry);
+      const result = await scanFileSystem(directoryEntry, (progress) => {
+        updateProgress({
+          isProcessing: true,
+          stage: progress.stage,
+          percentage: progress.percentage,
+          currentFile: progress.currentFile,
+          processedItems: progress.processedItems,
+          totalItems: progress.totalItems,
+          estimatedTimeRemaining: progress.estimatedTimeRemaining
+        });
+      });
+      
       setAnalysisResult(result);
     } catch (error) {
       console.error("Error analyzing files:", error);
+      updateProgress({ isProcessing: false, stage: "idle" });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFilesArrayLoaded = (result: AnalysisResult) => {
-    setAnalysisResult(result);
-    setIsLoading(false);
+  const handleFilesArrayLoaded = async (files: FileList) => {
+    setIsLoading(true);
+    resetProgress();
+    updateProgress({ isProcessing: true, stage: "scanning" });
+    
+    try {
+      const result = await scanFilesViaInput(files, (progress) => {
+        updateProgress({
+          isProcessing: true,
+          stage: progress.stage,
+          percentage: progress.percentage,
+          currentFile: progress.currentFile,
+          processedItems: progress.processedItems,
+          totalItems: progress.totalItems,
+          estimatedTimeRemaining: progress.estimatedTimeRemaining
+        });
+      });
+      
+      setAnalysisResult(result);
+    } catch (error) {
+      console.error("Error analyzing files:", error);
+      updateProgress({ isProcessing: false, stage: "idle" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleUseMockData = () => {
     setIsLoading(true);
+    resetProgress();
+    
+    // Simulate progress updates for mock data
+    updateProgress({ 
+      isProcessing: true, 
+      stage: "scanning", 
+      percentage: 0,
+      currentFile: "Processing mock data...",
+      processedItems: 0,
+      totalItems: 100
+    });
+    
+    // Create a mock progress simulation
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      if (progress <= 95) {
+        updateProgress({ 
+          percentage: progress,
+          currentFile: `Processing mock file ${progress}...`,
+          processedItems: Math.floor(progress),
+          totalItems: 100,
+          estimatedTimeRemaining: (100 - progress) / 10 // 10% per 100ms = estimate in seconds
+        });
+      } else {
+        clearInterval(interval);
+      }
+    }, 50);
+    
     // Simulate a delay for the loading experience
     setTimeout(() => {
       const mockData = mockFileSystemData();
       setAnalysisResult(mockData);
       setIsLoading(false);
-    }, 1500);
+      clearInterval(interval);
+      
+      // Final update before visualization takes over
+      updateProgress({ 
+        stage: "analyzing",
+        percentage: 100,
+        currentFile: "Mock data processed",
+        processedItems: 100,
+        totalItems: 100,
+        estimatedTimeRemaining: 0
+      });
+    }, 1000);
   };
 
   const handleBackToFileSelect = () => {
     setAnalysisResult(null);
+    resetProgress();
   };
 
   const openStackblitz = () => {

@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useProgress } from "@/contexts/ProgressContext";
 
 interface MindMapProps {
   data: DirectoryNode | null;
@@ -29,6 +30,7 @@ const MindMap = ({ data }: MindMapProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [zoomLevel, setZoomLevel] = useState(1);
+  const { updateProgress } = useProgress();
   
   // Enhanced resize handler for more responsive dimensions
   useEffect(() => {
@@ -67,8 +69,56 @@ const MindMap = ({ data }: MindMapProps) => {
   // Recreate visualization when data or dimensions change
   useEffect(() => {
     if (!data || !svgRef.current) return;
-    createMindMapVisualization(svgRef, data, dimensions);
-  }, [data, dimensions]);
+    
+    // Update progress to visualizing stage
+    const nodeCount = countNodes(data);
+    updateProgress({
+      isProcessing: true,
+      stage: "visualizing",
+      percentage: 0,
+      currentFile: "Creating visualization...",
+      processedItems: 0,
+      totalItems: nodeCount,
+      estimatedTimeRemaining: estimateVisTime(nodeCount)
+    });
+    
+    // Use requestAnimationFrame to allow the UI to update before heavy operation
+    requestAnimationFrame(() => {
+      createMindMapVisualization(svgRef, data, dimensions, (progress) => {
+        updateProgress({
+          percentage: progress.percentage,
+          currentFile: progress.currentFile,
+          processedItems: progress.processedItems,
+          totalItems: progress.totalItems,
+          estimatedTimeRemaining: progress.estimatedTimeRemaining
+        });
+      });
+      
+      // Mark process as complete
+      setTimeout(() => {
+        updateProgress({
+          isProcessing: false,
+          stage: "idle",
+          percentage: 100
+        });
+      }, 500);
+    });
+  }, [data, dimensions, updateProgress]);
+  
+  // Helper function to count nodes for progress estimation
+  const countNodes = (root: DirectoryNode): number => {
+    let count = 1;
+    if (root.children && root.children.length > 0) {
+      count += root.children.reduce((acc, child) => acc + countNodes(child), 0);
+    }
+    return count;
+  };
+  
+  // Estimate visualization time based on node count
+  const estimateVisTime = (nodeCount: number): number => {
+    // Very rough estimate: 0.1 seconds per node with minimum 1 second
+    return Math.max(1, nodeCount * 0.1);
+  };
   
   // SVG Export handler
   const handleExportSVG = () => {

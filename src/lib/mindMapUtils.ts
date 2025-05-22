@@ -162,11 +162,18 @@ const calculateOptimalTreeSize = (hierarchy: d3.HierarchyNode<DirectoryNode>) =>
   };
 };
 
-// Create D3 visualization for the mind map
+// Create D3 visualization for the mind map with progress reporting
 export const createMindMapVisualization = (
   svgRef: React.RefObject<SVGSVGElement>,
   data: DirectoryNode, 
-  dimensions: { width: number; height: number }
+  dimensions: { width: number; height: number },
+  progressCallback?: (progress: {
+    percentage: number;
+    currentFile: string;
+    processedItems: number;
+    totalItems: number;
+    estimatedTimeRemaining: number | null;
+  }) => void
 ) => {
   if (!svgRef.current) return;
 
@@ -180,6 +187,32 @@ export const createMindMapVisualization = (
 
   // Create a hierarchical layout
   const hierarchy = d3.hierarchy(data);
+  const totalNodes = hierarchy.descendants().length;
+  let processedNodes = 0;
+  
+  // Track processing time for estimation
+  const startTime = Date.now();
+  let lastUpdateTime = startTime;
+  
+  // Function to estimate remaining time
+  const estimateTimeRemaining = (processed: number, total: number): number | null => {
+    if (processed === 0) return null;
+    const elapsedMs = Date.now() - startTime;
+    const msPerNode = elapsedMs / processed;
+    const remainingNodes = total - processed;
+    return (msPerNode * remainingNodes) / 1000; // seconds
+  };
+  
+  // Report initial progress
+  if (progressCallback) {
+    progressCallback({
+      percentage: 0,
+      currentFile: "Preparing visualization...",
+      processedItems: 0,
+      totalItems: totalNodes,
+      estimatedTimeRemaining: null
+    });
+  }
   
   // Calculate optimal size based on data complexity
   const optimalSize = calculateOptimalTreeSize(hierarchy);
@@ -187,11 +220,23 @@ export const createMindMapVisualization = (
   // Dynamic separation based on node count
   const nodeSeparationFactor = Math.min(4, Math.max(2.5, hierarchy.descendants().length / 100 + 2));
   
+  // Update progress to 10% after calculating layout parameters
+  if (progressCallback) {
+    processedNodes += Math.floor(totalNodes * 0.1);
+    progressCallback({
+      percentage: 10,
+      currentFile: "Calculating layout...",
+      processedItems: processedNodes,
+      totalItems: totalNodes,
+      estimatedTimeRemaining: estimateTimeRemaining(processedNodes, totalNodes)
+    });
+  }
+  
   // Increase vertical spacing between nodes for better readability
   const treeLayout = d3.tree<DirectoryNode>()
     .size([Math.min(height - 100, optimalSize.height), Math.min(width - 300, optimalSize.width)])
     .separation((a, b) => {
-      // Enhanced separation function
+      // Enhanced separation function code here
       // Base separation is higher (3-4 units), plus we add more for nodes with longer names
       // Also consider the depth of the nodes - deeper nodes might need more separation
       const baseSpacing = nodeSeparationFactor;
@@ -203,6 +248,19 @@ export const createMindMapVisualization = (
     }); 
   
   const root = treeLayout(hierarchy);
+  
+  // Update progress to 30% after tree layout
+  if (progressCallback && Date.now() - lastUpdateTime > 100) {
+    lastUpdateTime = Date.now();
+    processedNodes += Math.floor(totalNodes * 0.2);
+    progressCallback({
+      percentage: 30,
+      currentFile: "Creating node links...",
+      processedItems: processedNodes,
+      totalItems: totalNodes,
+      estimatedTimeRemaining: estimateTimeRemaining(processedNodes, totalNodes)
+    });
+  }
 
   // Create a group for the entire visualization with zoom capability
   const g = svg.append("g")
@@ -220,6 +278,19 @@ export const createMindMapVisualization = (
     .attr("stroke", "#6366f1")
     .attr("stroke-width", 1.5)
     .attr("opacity", 0.6);
+    
+  // Update progress to 50% after creating links
+  if (progressCallback && Date.now() - lastUpdateTime > 100) {
+    lastUpdateTime = Date.now();
+    processedNodes += Math.floor(totalNodes * 0.2);
+    progressCallback({
+      percentage: 50,
+      currentFile: "Creating node elements...",
+      processedItems: processedNodes,
+      totalItems: totalNodes,
+      estimatedTimeRemaining: estimateTimeRemaining(processedNodes, totalNodes)
+    });
+  }
 
   // Add node groups with fixed positions
   const nodeGroups = g.selectAll(".node")
@@ -228,6 +299,19 @@ export const createMindMapVisualization = (
     .attr("class", "node")
     .attr("transform", d => `translate(${d.y},${d.x})`)
     .attr("data-path", d => d.data.path);
+
+  // Update progress to 60% after creating node groups
+  if (progressCallback && Date.now() - lastUpdateTime > 100) {
+    lastUpdateTime = Date.now();
+    processedNodes += Math.floor(totalNodes * 0.1);
+    progressCallback({
+      percentage: 60,
+      currentFile: "Adding node backgrounds...",
+      processedItems: processedNodes,
+      totalItems: totalNodes,
+      estimatedTimeRemaining: estimateTimeRemaining(processedNodes, totalNodes)
+    });
+  }
 
   // Add background rectangles for better hover behavior with increased size
   nodeGroups.append("rect")
@@ -242,6 +326,19 @@ export const createMindMapVisualization = (
     .attr("height", 40) // Increased height for better click area
     .attr("fill", "transparent") // Transparent by default
     .attr("rx", 4); // Rounded corners
+    
+  // Update progress to 70% after creating node backgrounds
+  if (progressCallback && Date.now() - lastUpdateTime > 100) {
+    lastUpdateTime = Date.now();
+    processedNodes += Math.floor(totalNodes * 0.1);
+    progressCallback({
+      percentage: 70,
+      currentFile: "Adding node circles...",
+      processedItems: processedNodes,
+      totalItems: totalNodes,
+      estimatedTimeRemaining: estimateTimeRemaining(processedNodes, totalNodes)
+    });
+  }
 
   // Add node circles with different colors based on node type
   nodeGroups.append("circle")
@@ -253,6 +350,19 @@ export const createMindMapVisualization = (
     })
     .attr("stroke", "#1e293b")
     .attr("stroke-width", 1.5);
+    
+  // Update progress to 80% after creating node circles
+  if (progressCallback && Date.now() - lastUpdateTime > 100) {
+    lastUpdateTime = Date.now();
+    processedNodes += Math.floor(totalNodes * 0.1);
+    progressCallback({
+      percentage: 80,
+      currentFile: "Adding node labels...",
+      processedItems: processedNodes,
+      totalItems: totalNodes,
+      estimatedTimeRemaining: estimateTimeRemaining(processedNodes, totalNodes)
+    });
+  }
 
   // More aggressive truncation based on depth and node density
   const calculateTruncateLength = (node: d3.HierarchyNode<DirectoryNode>) => {
@@ -280,6 +390,19 @@ export const createMindMapVisualization = (
     .attr("fill", "currentColor")
     .attr("class", "node-text")
     .attr("dominant-baseline", "middle"); // Better vertical alignment
+    
+  // Update progress to 90% after adding labels
+  if (progressCallback && Date.now() - lastUpdateTime > 100) {
+    lastUpdateTime = Date.now();
+    processedNodes += Math.floor(totalNodes * 0.1);
+    progressCallback({
+      percentage: 90,
+      currentFile: "Adding text backgrounds...",
+      processedItems: processedNodes,
+      totalItems: totalNodes,
+      estimatedTimeRemaining: estimateTimeRemaining(processedNodes, totalNodes)
+    });
+  }
 
   // Add stable text backgrounds that don't change on hover
   labels.each(function(d) {
@@ -356,4 +479,15 @@ export const createMindMapVisualization = (
   svg.call(zoom.transform as any, d3.zoomIdentity
     .translate(250, 75)
     .scale(autoScale)); // Automatically calculate zoom level
+    
+  // Final progress update - complete
+  if (progressCallback) {
+    progressCallback({
+      percentage: 100,
+      currentFile: "Visualization complete",
+      processedItems: totalNodes,
+      totalItems: totalNodes,
+      estimatedTimeRemaining: 0
+    });
+  }
 };
