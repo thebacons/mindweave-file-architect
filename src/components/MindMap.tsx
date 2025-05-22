@@ -1,6 +1,6 @@
 
-import { useState, useEffect, useRef } from "react";
-import * as d3 from "d3"; // Add this import to fix the d3 reference errors
+import { useState, useEffect, useRef, useCallback } from "react";
+import * as d3 from "d3";
 import { DirectoryNode } from "@/types/filesystem";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -31,6 +31,8 @@ const MindMap = ({ data }: MindMapProps) => {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [zoomLevel, setZoomLevel] = useState(1);
   const { updateProgress } = useProgress();
+  // Ref to track if visualization is in progress to prevent update loops
+  const isVisualizingRef = useRef(false);
   
   // Enhanced resize handler for more responsive dimensions
   useEffect(() => {
@@ -66,13 +68,22 @@ const MindMap = ({ data }: MindMapProps) => {
     };
   }, []);
 
+  // Throttled progress update function to prevent excessive updates
+  const throttledUpdateProgress = useCallback((updates: any) => {
+    if (!isVisualizingRef.current) return;
+    updateProgress(updates);
+  }, [updateProgress]);
+  
   // Recreate visualization when data or dimensions change
   useEffect(() => {
     if (!data || !svgRef.current) return;
     
+    // Set visualizing flag to true at the start
+    isVisualizingRef.current = true;
+    
     // Update progress to visualizing stage
     const nodeCount = countNodes(data);
-    updateProgress({
+    throttledUpdateProgress({
       isProcessing: true,
       stage: "visualizing",
       percentage: 0,
@@ -83,27 +94,39 @@ const MindMap = ({ data }: MindMapProps) => {
     });
     
     // Use requestAnimationFrame to allow the UI to update before heavy operation
-    requestAnimationFrame(() => {
+    const timeoutId = setTimeout(() => {
       createMindMapVisualization(svgRef, data, dimensions, (progress) => {
-        updateProgress({
-          percentage: progress.percentage,
-          currentFile: progress.currentFile,
-          processedItems: progress.processedItems,
-          totalItems: progress.totalItems,
-          estimatedTimeRemaining: progress.estimatedTimeRemaining
-        });
+        // Only update if visualization is still in progress
+        if (isVisualizingRef.current) {
+          throttledUpdateProgress({
+            percentage: progress.percentage,
+            currentFile: progress.currentFile,
+            processedItems: progress.processedItems,
+            totalItems: progress.totalItems,
+            estimatedTimeRemaining: progress.estimatedTimeRemaining
+          });
+        }
       });
       
-      // Mark process as complete
+      // Mark process as complete after visualization
       setTimeout(() => {
-        updateProgress({
-          isProcessing: false,
-          stage: "idle",
-          percentage: 100
-        });
+        if (isVisualizingRef.current) {
+          throttledUpdateProgress({
+            isProcessing: false,
+            stage: "idle",
+            percentage: 100
+          });
+          isVisualizingRef.current = false;
+        }
       }, 500);
-    });
-  }, [data, dimensions, updateProgress]);
+    }, 100);
+    
+    return () => {
+      // Clean up if component unmounts during visualization
+      clearTimeout(timeoutId);
+      isVisualizingRef.current = false;
+    };
+  }, [data, dimensions, throttledUpdateProgress]);
   
   // Helper function to count nodes for progress estimation
   const countNodes = (root: DirectoryNode): number => {
