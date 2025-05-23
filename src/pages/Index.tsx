@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import FileUploader from "@/components/FileUploader";
 import MindMap from "@/components/MindMap";
@@ -28,7 +27,7 @@ import { useProgress } from "@/contexts/ProgressContext";
 const Index = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { updateProgress, resetProgress } = useProgress();
+  const { progress, updateProgress, resetProgress } = useProgress();
 
   const handleFilesLoaded = async (directoryEntry: FileSystemDirectoryEntry) => {
     setIsLoading(true);
@@ -49,10 +48,10 @@ const Index = () => {
       });
       
       setAnalysisResult(result);
+      // Don't set loading to false here - let MindMap control it through progress context
     } catch (error) {
       console.error("Error analyzing files:", error);
       updateProgress({ isProcessing: false, stage: "idle" });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -76,10 +75,10 @@ const Index = () => {
       });
       
       setAnalysisResult(result);
+      // Don't set loading to false here - let MindMap control it through progress context
     } catch (error) {
       console.error("Error analyzing files:", error);
       updateProgress({ isProcessing: false, stage: "idle" });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -119,7 +118,6 @@ const Index = () => {
     setTimeout(() => {
       const mockData = mockFileSystemData();
       setAnalysisResult(mockData);
-      setIsLoading(false);
       clearInterval(interval);
       
       // Final update before visualization takes over
@@ -131,13 +129,18 @@ const Index = () => {
         totalItems: 100,
         estimatedTimeRemaining: 0
       });
+      // Don't set loading to false here - let MindMap control it through progress context
     }, 1000);
   };
 
   const handleBackToFileSelect = () => {
     setAnalysisResult(null);
+    setIsLoading(false);
     resetProgress();
   };
+
+  // Listen to progress context to determine when to hide loading overlay
+  const shouldShowLoading = isLoading || progress.isProcessing;
 
   const openStackblitz = () => {
     window.open("https://stackblitz.com/github/TheBacons/mindweave-file-architect", "_blank");
@@ -261,7 +264,7 @@ src/
       </header>
 
       <LoadingOverlay 
-        isLoading={isLoading}
+        isLoading={shouldShowLoading}
         message="Analyzing your file system..." 
       />
       
